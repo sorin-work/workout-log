@@ -13,6 +13,7 @@ import (
 
 	"github.com/sorin-work/workout-log/internal/api"
 	"github.com/sorin-work/workout-log/internal/config"
+	"github.com/sorin-work/workout-log/internal/database"
 )
 
 func main() {
@@ -32,6 +33,16 @@ func run() error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	pool, err := database.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	if err := database.Migrate(ctx, pool); err != nil {
+		return err
+	}
+	logger.Info("database ready")
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
