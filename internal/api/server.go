@@ -2,27 +2,57 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/sorin-work/workout-log/internal/store"
 )
+
+// Options configures a Server.
+type Options struct {
+	SessionTTL time.Duration
+	// SecureCookies marks the session cookie as Secure (HTTPS only).
+	SecureCookies bool
+}
 
 // Server holds the dependencies shared by the HTTP handlers.
 type Server struct {
+	store  *store.Store
+	opts   Options
 	router chi.Router
+	now    func() time.Time
 }
 
 // NewServer builds the router with all routes registered.
-func NewServer() *Server {
-	s := &Server{}
+func NewServer(st *store.Store, opts Options) *Server {
+	if opts.SessionTTL == 0 {
+		opts.SessionTTL = 30 * 24 * time.Hour
+	}
+	s := &Server{store: st, opts: opts, now: time.Now}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 
-	r.Get("/api/health", s.handleHealth)
+	r.Route("/api", func(r chi.Router) {
+		r.Get("/health", s.handleHealth)
+
+		r.Post("/auth/signup", s.handleSignup)
+		r.Post("/auth/login", s.handleLogin)
+		r.Post("/auth/logout", s.handleLogout)
+
+		r.Group(func(r chi.Router) {
+			r.Use(s.requireUser)
+			r.Get("/me", s.handleMe)
+		})
+
+		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+			writeError(w, http.StatusNotFound, "not_found", "No such endpoint.")
+		})
+	})
 	s.router = r
 	return s
 }
@@ -32,6 +62,5 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/sorin-work/workout-log/internal/api"
 	"github.com/sorin-work/workout-log/internal/config"
 	"github.com/sorin-work/workout-log/internal/database"
+	"github.com/sorin-work/workout-log/internal/store"
 )
 
 func main() {
@@ -46,7 +47,7 @@ func run() error {
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
-		Handler:           api.NewServer(),
+		Handler:           api.NewServer(store.New(pool), api.Options{SessionTTL: cfg.SessionTTL, SecureCookies: cfg.SecureCookies}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	errc := make(chan error, 1)

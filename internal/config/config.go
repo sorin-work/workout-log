@@ -14,6 +14,8 @@ type Config struct {
 	DatabaseURL string
 	LogLevel    string
 	SessionTTL  time.Duration
+	// SecureCookies should be on when the app is served over HTTPS.
+	SecureCookies bool
 }
 
 // FromEnv reads the configuration, applying defaults for optional values.
@@ -41,6 +43,13 @@ func parse(getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("SESSION_TTL must be a positive duration, got %q", v)
 		}
 		cfg.SessionTTL = d
+	}
+	if v := getenv("SECURE_COOKIES"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return Config{}, fmt.Errorf("SECURE_COOKIES must be true or false, got %q", v)
+		}
+		cfg.SecureCookies = b
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
