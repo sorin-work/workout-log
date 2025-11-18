@@ -47,6 +47,9 @@ func NewServer(st *store.Store, opts Options) *Server {
 		r.Group(func(r chi.Router) {
 			r.Use(s.requireUser)
 			r.Get("/me", s.handleMe)
+
+			r.Get("/exercises", s.handleListExercises)
+			r.Get("/exercises/{id}", s.handleGetExercise)
 		})
 
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {

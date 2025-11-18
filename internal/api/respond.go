@@ -7,7 +7,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // maxBodyBytes caps request bodies; workouts with many sets stay far below it.
@@ -87,4 +90,15 @@ func describeDecodeError(err error) string {
 	default:
 		return "Malformed JSON."
 	}
+}
+
+// pathID parses a positive integer URL parameter. On failure it writes a 404
+// and returns false.
+func pathID(w http.ResponseWriter, r *http.Request, name string) (int64, bool) {
+	id, err := strconv.ParseInt(chi.URLParam(r, name), 10, 64)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusNotFound, "not_found", "Not found.")
+		return 0, false
+	}
+	return id, true
 }
