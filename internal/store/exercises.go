@@ -86,3 +86,65 @@ func (s *Store) ExerciseByID(ctx context.Context, userID, id int64) (Exercise, e
 func escapeLike(s string) string {
 	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
 }
+
+// ExerciseInput holds the editable fields of a custom exercise.
+type ExerciseInput struct {
+	Name             string
+	PrimaryMuscle    string
+	SecondaryMuscles []string
+	Equipment        string
+}
+
+// CreateExercise adds a custom exercise for a user. It returns ErrConflict
+// if the user already has an exercise with that name, or one exists in the
+// built-in library.
+func (s *Store) CreateExercise(ctx context.Context, userID int64, in ExerciseInput) (Exercise, error) {
+	if taken, err := s.builtinNameTaken(ctx, in.Name); err != nil || taken {
+		if err == nil {
+			err = ErrConflict
+		}
+		return Exercise{}, err
+	}
+	e, err := scanExercise(s.pool.QueryRow(ctx, `INSERT INTO exercises
+		(user_id, name, primary_muscle, secondary_muscles, equipment)
+		VALUES ($1, $2, $3, $4, $5) RETURNING `+exerciseColumns,
+		userID, in.Name, in.PrimaryMuscle, in.SecondaryMuscles, in.Equipment))
+	if isUniqueViolation(err) {
+		return Exercise{}, ErrConflict
+	}
+	return e, err
+}
+
+// UpdateExercise changes a custom exercise owned by the user.
+func (s *Store) UpdateExercise(ctx context.Context, userID, id int64, in ExerciseInput) (Exercise, error) {
+	if taken, err := s.builtinNameTaken(ctx, in.Name); err != nil || taken {
+		if err == nil {
+			err = ErrConflict
+		}
+		return Exercise{}, err
+	}
+	e, err := scanExercise(s.pool.QueryRow(ctx, `UPDATE exercises
+		SET name = $3, primary_muscle = $4, secondary_muscles = $5, equipment = $6
+		WHERE id = $1 AND user_id = $2 RETURNING `+exerciseColumns,
+		id, userID, in.Name, in.PrimaryMuscle, in.SecondaryMuscles, in.Equipment))
+	if isUniqueViolation(err) {
+		return Exercise{}, ErrConflict
+	}
+	return e, notFound(err)
+}
+
+// SetExerciseArchived archives or restores a custom exercise. Archived
+// exercises keep their history but are hidden from pickers.
+func (s *Store) SetExerciseArchived(ctx context.Context, userID, id int64, archived bool) (Exercise, error) {
+	e, err := scanExercise(s.pool.QueryRow(ctx, `UPDATE exercises
+		SET archived_at = CASE WHEN $3 THEN coalesce(archived_at, now()) END
+		WHERE id = $1 AND user_id = $2 RETURNING `+exerciseColumns, id, userID, archived))
+	return e, notFound(err)
+}
+
+func (s *Store) builtinNameTaken(ctx context.Context, name string) (bool, error) {
+	var taken bool
+	err := s.pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM exercises
+		WHERE user_id IS NULL AND lower(name) = lower($1))`, name).Scan(&taken)
+	return taken, err
+}

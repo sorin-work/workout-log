@@ -49,7 +49,11 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Get("/me", s.handleMe)
 
 			r.Get("/exercises", s.handleListExercises)
+			r.Post("/exercises", s.handleCreateExercise)
 			r.Get("/exercises/{id}", s.handleGetExercise)
+			r.Put("/exercises/{id}", s.handleUpdateExercise)
+			r.Post("/exercises/{id}/archive", s.handleArchiveExercise(true))
+			r.Post("/exercises/{id}/restore", s.handleArchiveExercise(false))
 		})
 
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
