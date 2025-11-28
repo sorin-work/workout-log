@@ -1,0 +1,152 @@
+package store
+
+import (
+	"context"
+	"time"
+)
+
+// Workout is a training session with its logged sets.
+type Workout struct {
+	ID         int64      `json:"id"`
+	Name       string     `json:"name"`
+	Notes      string     `json:"notes"`
+	StartedAt  time.Time  `json:"startedAt"`
+	FinishedAt *time.Time `json:"finishedAt"`
+	Sets       []Set      `json:"sets"`
+}
+
+// WorkoutSummary is a workout in the history list.
+type WorkoutSummary struct {
+	ID            int64      `json:"id"`
+	Name          string     `json:"name"`
+	StartedAt     time.Time  `json:"startedAt"`
+	FinishedAt    *time.Time `json:"finishedAt"`
+	ExerciseCount int        `json:"exerciseCount"`
+	SetCount      int        `json:"setCount"`
+	VolumeKg      float64    `json:"volumeKg"`
+}
+
+// Set is one logged set.
+type Set struct {
+	ID           int64    `json:"id"`
+	ExerciseID   int64    `json:"exerciseId"`
+	ExerciseName string   `json:"exerciseName"`
+	Position     int      `json:"position"`
+	Reps         int      `json:"reps"`
+	WeightKg     float64  `json:"weightKg"`
+	RPE          *float64 `json:"rpe"`
+	Completed    bool     `json:"completed"`
+	Warmup       bool     `json:"warmup"`
+}
+
+// WorkoutInput holds the editable fields of a workout.
+type WorkoutInput struct {
+	Name       string
+	Notes      string
+	StartedAt  time.Time
+	FinishedAt *time.Time
+}
+
+const workoutColumns = `id, name, notes, started_at, finished_at`
+
+func scanWorkout(row interface{ Scan(...any) error }) (Workout, error) {
+	var w Workout
+	err := row.Scan(&w.ID, &w.Name, &w.Notes, &w.StartedAt, &w.FinishedAt)
+	w.Sets = []Set{}
+	return w, err
+}
+
+// CreateWorkout starts a new workout for the user.
+func (s *Store) CreateWorkout(ctx context.Context, userID int64, in WorkoutInput) (Workout, error) {
+	return scanWorkout(s.pool.QueryRow(ctx, `INSERT INTO workouts (user_id, name, notes, started_at, finished_at)
+		VALUES ($1, $2, $3, $4, $5) RETURNING `+workoutColumns,
+		userID, in.Name, in.Notes, in.StartedAt, in.FinishedAt))
+}
+
+// WorkoutByID returns one of the user's workouts with its sets in order.
+func (s *Store) WorkoutByID(ctx context.Context, userID, id int64) (Workout, error) {
+	w, err := scanWorkout(s.pool.QueryRow(ctx, `SELECT `+workoutColumns+` FROM workouts
+		WHERE id = $1 AND user_id = $2`, id, userID))
+	if err != nil {
+		return Workout{}, notFound(err)
+	}
+	w.Sets, err = s.setsForWorkout(ctx, id)
+	return w, err
+}
+
+func (s *Store) setsForWorkout(ctx context.Context, workoutID int64) ([]Set, error) {
+	rows, err := s.pool.Query(ctx, `SELECT `+setColumns+`
+		FROM workout_sets ws JOIN exercises e ON e.id = ws.exercise_id
+		WHERE ws.workout_id = $1 ORDER BY ws.position, ws.id`, workoutID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	sets := []Set{}
+	for rows.Next() {
+		st, err := scanSet(rows)
+		if err != nil {
+			return nil, err
+		}
+		sets = append(sets, st)
+	}
+	return sets, rows.Err()
+}
+
+const setColumns = `ws.id, ws.exercise_id, e.name, ws.position, ws.reps, ws.weight_kg::float8, ws.rpe::float8, ws.completed, ws.warmup`
+
+func scanSet(row interface{ Scan(...any) error }) (Set, error) {
+	var st Set
+	err := row.Scan(&st.ID, &st.ExerciseID, &st.ExerciseName, &st.Position, &st.Reps, &st.WeightKg, &st.RPE, &st.Completed, &st.Warmup)
+	return st, err
+}
+
+// ListWorkouts returns the user's workouts, newest first, with a summary of
+// what was done in each.
+func (s *Store) ListWorkouts(ctx context.Context, userID int64) ([]WorkoutSummary, error) {
+	rows, err := s.pool.Query(ctx, `SELECT w.id, w.name, w.started_at, w.finished_at,
+			count(DISTINCT ws.exercise_id),
+			count(ws.id) FILTER (WHERE ws.completed AND NOT ws.warmup),
+			coalesce(sum(ws.reps * ws.weight_kg) FILTER (WHERE ws.completed AND NOT ws.warmup), 0)::float8
+		FROM workouts w LEFT JOIN workout_sets ws ON ws.workout_id = w.id
+		WHERE w.user_id = $1
+		GROUP BY w.id
+		ORDER BY w.started_at DESC, w.id DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []WorkoutSummary{}
+	for rows.Next() {
+		var w WorkoutSummary
+		if err := rows.Scan(&w.ID, &w.Name, &w.StartedAt, &w.FinishedAt, &w.ExerciseCount, &w.SetCount, &w.VolumeKg); err != nil {
+			return nil, err
+		}
+		out = append(out, w)
+	}
+	return out, rows.Err()
+}
+
+// UpdateWorkout changes the name, notes and times of a workout.
+func (s *Store) UpdateWorkout(ctx context.Context, userID, id int64, in WorkoutInput) (Workout, error) {
+	_, err := scanWorkout(s.pool.QueryRow(ctx, `UPDATE workouts
+		SET name = $3, notes = $4, started_at = $5, finished_at = $6
+		WHERE id = $1 AND user_id = $2 RETURNING `+workoutColumns,
+		id, userID, in.Name, in.Notes, in.StartedAt, in.FinishedAt))
+	if err != nil {
+		return Workout{}, notFound(err)
+	}
+	return s.WorkoutByID(ctx, userID, id)
+}
+
+// DeleteWorkout removes a workout and its sets.
+func (s *Store) DeleteWorkout(ctx context.Context, userID, id int64) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM workouts WHERE id = $1 AND user_id = $2`, id, userID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

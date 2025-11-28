@@ -54,6 +54,12 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Put("/exercises/{id}", s.handleUpdateExercise)
 			r.Post("/exercises/{id}/archive", s.handleArchiveExercise(true))
 			r.Post("/exercises/{id}/restore", s.handleArchiveExercise(false))
+
+			r.Get("/workouts", s.handleListWorkouts)
+			r.Post("/workouts", s.handleCreateWorkout)
+			r.Get("/workouts/{id}", s.handleGetWorkout)
+			r.Put("/workouts/{id}", s.handleUpdateWorkout)
+			r.Delete("/workouts/{id}", s.handleDeleteWorkout)
 		})
 
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
