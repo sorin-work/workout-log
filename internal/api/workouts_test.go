@@ -176,3 +176,16 @@ func TestUpdateWorkout(t *testing.T) {
 		t.Fatalf("update not applied: %+v", got)
 	}
 }
+
+func TestFinishWorkout(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("w@example.com")
+	w := createWorkout(t, c, "Day A", time.Now().Add(-45*time.Minute))
+	var got store.Workout
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/finish", w.ID), nil, http.StatusOK, &got)
+	if got.FinishedAt == nil || got.FinishedAt.Before(got.StartedAt) {
+		t.Fatalf("finishedAt = %v", got.FinishedAt)
+	}
+	other := a.signup("other@example.com")
+	other.mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/finish", w.ID), nil, http.StatusNotFound, nil)
+}

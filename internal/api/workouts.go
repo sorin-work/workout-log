@@ -138,3 +138,20 @@ func (s *Server) handleDeleteWorkout(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *Server) handleFinishWorkout(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	wo, err := s.store.FinishWorkout(r.Context(), currentUser(r.Context()).ID, id, s.now())
+	if errors.Is(err, store.ErrNotFound) {
+		writeNotFound(w, "Workout")
+		return
+	}
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, wo)
+}

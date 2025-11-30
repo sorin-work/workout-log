@@ -150,3 +150,16 @@ func (s *Store) DeleteWorkout(ctx context.Context, userID, id int64) error {
 	}
 	return nil
 }
+
+// FinishWorkout stamps the finish time of a workout.
+func (s *Store) FinishWorkout(ctx context.Context, userID, id int64, at time.Time) (Workout, error) {
+	tag, err := s.pool.Exec(ctx, `UPDATE workouts SET finished_at = greatest($3, started_at)
+		WHERE id = $1 AND user_id = $2`, id, userID, at)
+	if err != nil {
+		return Workout{}, err
+	}
+	if tag.RowsAffected() == 0 {
+		return Workout{}, ErrNotFound
+	}
+	return s.WorkoutByID(ctx, userID, id)
+}
