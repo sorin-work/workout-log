@@ -92,12 +92,12 @@ func TestLogSetsAndSummary(t *testing.T) {
 		"exerciseId": squat, "reps": 5, "weightKg": 60, "completed": true, "warmup": true,
 	}, http.StatusOK, nil)
 
-	var list []store.WorkoutSummary
-	c.mustDo(http.MethodGet, "/api/workouts", nil, http.StatusOK, &list)
-	if len(list) != 1 {
-		t.Fatalf("list: %+v", list)
+	var page workoutPage
+	c.mustDo(http.MethodGet, "/api/workouts", nil, http.StatusOK, &page)
+	if len(page.Items) != 1 {
+		t.Fatalf("list: %+v", page)
 	}
-	s := list[0]
+	s := page.Items[0]
 	// 5x100 + 8x70; the warm-up and the missed set do not count.
 	if s.ExerciseCount != 2 || s.SetCount != 2 || s.VolumeKg != 1060 {
 		t.Fatalf("summary: %+v", s)
@@ -188,4 +188,27 @@ func TestFinishWorkout(t *testing.T) {
 	}
 	other := a.signup("other@example.com")
 	other.mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/finish", w.ID), nil, http.StatusNotFound, nil)
+}
+
+func TestWorkoutHistoryPages(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("w@example.com")
+	base := time.Now().Add(-30 * 24 * time.Hour)
+	for i := 0; i < 4; i++ {
+		createWorkout(t, c, fmt.Sprintf("Workout %d", i+1), base.Add(time.Duration(i)*24*time.Hour))
+	}
+	var p1, p2 workoutPage
+	c.mustDo(http.MethodGet, "/api/workouts?pageSize=2", nil, http.StatusOK, &p1)
+	c.mustDo(http.MethodGet, "/api/workouts?pageSize=2&page=2", nil, http.StatusOK, &p2)
+	if p1.Total != 4 || p1.TotalPages != 2 {
+		t.Fatalf("page 1 meta: %+v", p1)
+	}
+	if p1.Items[0].Name != "Workout 4" || p1.Items[1].Name != "Workout 3" {
+		t.Fatalf("page 1 not newest first: %+v", p1.Items)
+	}
+	if len(p2.Items) != 2 || p2.Items[1].Name != "Workout 1" {
+		t.Fatalf("page 2: %+v", p2.Items)
+	}
+	c.mustDo(http.MethodGet, "/api/workouts?page=0", nil, http.StatusBadRequest, nil)
+	c.mustDo(http.MethodGet, "/api/workouts?pageSize=500", nil, http.StatusBadRequest, nil)
 }

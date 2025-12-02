@@ -101,9 +101,13 @@ func scanSet(row interface{ Scan(...any) error }) (Set, error) {
 	return st, err
 }
 
-// ListWorkouts returns the user's workouts, newest first, with a summary of
-// what was done in each.
-func (s *Store) ListWorkouts(ctx context.Context, userID int64) ([]WorkoutSummary, error) {
+// ListWorkouts returns a page of the user's workouts, newest first, with a
+// summary of what was done in each, and the total number of workouts.
+func (s *Store) ListWorkouts(ctx context.Context, userID int64, limit, offset int) ([]WorkoutSummary, int, error) {
+	var total int
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM workouts WHERE user_id = $1`, userID).Scan(&total); err != nil {
+		return nil, 0, err
+	}
 	rows, err := s.pool.Query(ctx, `SELECT w.id, w.name, w.started_at, w.finished_at,
 			count(DISTINCT ws.exercise_id),
 			count(ws.id) FILTER (WHERE ws.completed AND NOT ws.warmup),
@@ -111,20 +115,21 @@ func (s *Store) ListWorkouts(ctx context.Context, userID int64) ([]WorkoutSummar
 		FROM workouts w LEFT JOIN workout_sets ws ON ws.workout_id = w.id
 		WHERE w.user_id = $1
 		GROUP BY w.id
-		ORDER BY w.started_at DESC, w.id DESC`, userID)
+		ORDER BY w.started_at DESC, w.id DESC
+		LIMIT $2 OFFSET $3`, userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 	out := []WorkoutSummary{}
 	for rows.Next() {
 		var w WorkoutSummary
 		if err := rows.Scan(&w.ID, &w.Name, &w.StartedAt, &w.FinishedAt, &w.ExerciseCount, &w.SetCount, &w.VolumeKg); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		out = append(out, w)
 	}
-	return out, rows.Err()
+	return out, total, rows.Err()
 }
 
 // UpdateWorkout changes the name, notes and times of a workout.

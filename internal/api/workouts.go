@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -70,13 +71,57 @@ func (s *Server) handleCreateWorkout(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, wo)
 }
 
+// workoutPage is one page of the workout history.
+type workoutPage struct {
+	Items      []store.WorkoutSummary `json:"items"`
+	Page       int                    `json:"page"`
+	PageSize   int                    `json:"pageSize"`
+	Total      int                    `json:"total"`
+	TotalPages int                    `json:"totalPages"`
+}
+
+const (
+	defaultPageSize = 20
+	maxPageSize     = 100
+)
+
 func (s *Server) handleListWorkouts(w http.ResponseWriter, r *http.Request) {
-	list, err := s.store.ListWorkouts(r.Context(), currentUser(r.Context()).ID)
+	page, size, ok := pagination(w, r)
+	if !ok {
+		return
+	}
+	items, total, err := s.store.ListWorkouts(r.Context(), currentUser(r.Context()).ID, size, (page-1)*size)
 	if err != nil {
 		writeInternal(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, list)
+	writeJSON(w, http.StatusOK, workoutPage{
+		Items: items, Page: page, PageSize: size, Total: total,
+		TotalPages: total / size,
+	})
+}
+
+// pagination reads the 1-based page and pageSize query parameters.
+func pagination(w http.ResponseWriter, r *http.Request) (page, size int, ok bool) {
+	page, size = 1, defaultPageSize
+	q := r.URL.Query()
+	if v := q.Get("page"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 {
+			writeError(w, http.StatusBadRequest, "bad_request", "page must be a positive number.")
+			return 0, 0, false
+		}
+		page = n
+	}
+	if v := q.Get("pageSize"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > maxPageSize {
+			writeError(w, http.StatusBadRequest, "bad_request", "pageSize must be between 1 and 100.")
+			return 0, 0, false
+		}
+		size = n
+	}
+	return page, size, true
 }
 
 func (s *Server) handleGetWorkout(w http.ResponseWriter, r *http.Request) {
