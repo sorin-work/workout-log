@@ -45,9 +45,12 @@ func run() error {
 	}
 	logger.Info("database ready")
 
+	st := store.New(pool)
+	go cleanupSessions(ctx, st, logger)
+
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
-		Handler:           api.NewServer(store.New(pool), api.Options{SessionTTL: cfg.SessionTTL, SecureCookies: cfg.SecureCookies}),
+		Handler:           api.NewServer(st, api.Options{SessionTTL: cfg.SessionTTL, SecureCookies: cfg.SecureCookies}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	errc := make(chan error, 1)
@@ -76,4 +79,23 @@ func newLogger(level string) *slog.Logger {
 		l = slog.LevelInfo
 	}
 	return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: l}))
+}
+
+// cleanupSessions deletes expired sessions once an hour until ctx ends.
+func cleanupSessions(ctx context.Context, st *store.Store, logger *slog.Logger) {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+	for {
+		n, err := st.DeleteExpiredSessions(ctx)
+		if err != nil && ctx.Err() == nil {
+			logger.Warn("delete expired sessions", "err", err)
+		} else if n > 0 {
+			logger.Info("deleted expired sessions", "count", n)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }
