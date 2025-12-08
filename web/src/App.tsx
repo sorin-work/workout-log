@@ -1,21 +1,11 @@
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthProvider';
-import { useAuth } from './auth/context';
+import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import NotFoundPage from './pages/NotFoundPage';
 import SignupPage from './pages/SignupPage';
-
-function Home() {
-  const { user, logout } = useAuth();
-  return (
-    <main className="container">
-      <h1>Hi {user?.displayName || user?.email}</h1>
-      <button className="btn" onClick={logout}>
-        Log out
-      </button>
-    </main>
-  );
-}
 
 export default function App() {
   return (
@@ -25,13 +15,15 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route
-            path="*"
             element={
               <RequireAuth>
-                <Home />
+                <Layout />
               </RequireAuth>
             }
-          />
+          >
+            <Route index element={<HomePage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
         </Routes>
       </AuthProvider>
     </BrowserRouter>
