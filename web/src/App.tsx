@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthProvider';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
+import ExercisesPage from './pages/ExercisesPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -22,6 +23,7 @@ export default function App() {
             }
           >
             <Route index element={<HomePage />} />
+            <Route path="exercises" element={<ExercisesPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
