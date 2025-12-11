@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MUSCLE_GROUPS, EQUIPMENT, type Exercise } from '../api/types';
+import { ExerciseForm } from '../components/ExerciseForm';
 import { useFetch } from '../lib/useFetch';
 import { capitalize } from '../lib/text';
 
@@ -12,13 +13,28 @@ export default function ExercisesPage() {
   if (q.trim()) params.set('q', q.trim());
   if (muscle) params.set('muscle', muscle);
   if (equipment) params.set('equipment', equipment);
-  const { data, error, loading } = useFetch<Exercise[]>(`/exercises?${params}`);
+  const { data, error, loading, reload } = useFetch<Exercise[]>(`/exercises?${params}`);
+  const [creating, setCreating] = useState(false);
 
   return (
     <>
       <div className="page-header">
         <h1>Exercises</h1>
+        {!creating && (
+          <button className="btn primary" onClick={() => setCreating(true)}>
+            New exercise
+          </button>
+        )}
       </div>
+      {creating && (
+        <ExerciseForm
+          onCancel={() => setCreating(false)}
+          onSaved={() => {
+            setCreating(false);
+            reload();
+          }}
+        />
+      )}
       <div className="filters">
         <input
           type="search"
