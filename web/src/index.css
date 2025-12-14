@@ -349,3 +349,15 @@ tr.set.done {
 .picker-item:hover {
   background: #f6f8fa;
 }
+
+.right {
+  text-align: right;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}

@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import SignupPage from './pages/SignupPage';
 import WorkoutPage from './pages/WorkoutPage';
+import WorkoutsPage from './pages/WorkoutsPage';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           >
             <Route index element={<HomePage />} />
             <Route path="exercises" element={<ExercisesPage />} />
+            <Route path="workouts" element={<WorkoutsPage />} />
             <Route path="workouts/:id" element={<WorkoutPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
