@@ -270,3 +270,82 @@ textarea {
   border-radius: 999px;
   font-weight: 400;
 }
+
+.exercise-block {
+  margin-bottom: 1rem;
+}
+
+.exercise-block h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
+
+table.sets {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+
+table.sets th {
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #656d76;
+  padding: 0.2rem 0.3rem;
+}
+
+table.sets td {
+  padding: 0.2rem 0.3rem;
+}
+
+table.sets input:not([type='checkbox']) {
+  width: 4.5rem;
+}
+
+tr.set.done {
+  background: #dafbe1;
+}
+
+.icon-btn {
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #656d76;
+}
+
+.picker {
+  margin-bottom: 1rem;
+}
+
+.picker-head {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.picker-head input {
+  flex: 1;
+}
+
+.picker-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.picker-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0.25rem;
+  border: none;
+  border-bottom: 1px solid #eaeef2;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker-item:hover {
+  background: #f6f8fa;
+}

@@ -1,0 +1,139 @@
+import { useState } from 'react';
+import { Link, useParams } from 'react-router';
+import { del, errorMessage, post, put } from '../api/client';
+import type { Exercise, Workout, WorkoutSet } from '../api/types';
+import { ExercisePicker } from '../components/ExercisePicker';
+import { SetRow, type SetChanges } from '../components/SetRow';
+import { formatDate, formatDuration, formatTime } from '../lib/format';
+import { groupSets } from '../lib/groupSets';
+import { useFetch } from '../lib/useFetch';
+
+export default function WorkoutPage() {
+  const { id } = useParams();
+  const { data: workout, error, loading, setData } = useFetch<Workout>(`/workouts/${id}`);
+  const [picking, setPicking] = useState(false);
+  const [actionError, setActionError] = useState('');
+
+  if (loading && !workout) return <p className="muted">Loading…</p>;
+  if (error && !workout) return <p className="alert">{error}</p>;
+  if (!workout) return null;
+  const w = workout;
+
+  async function run(fn: () => Promise<void>) {
+    setActionError('');
+    try {
+      await fn();
+    } catch (err) {
+      setActionError(errorMessage(err));
+    }
+  }
+
+  function replaceSet(updated: WorkoutSet) {
+    setData({ ...w, sets: w.sets.map((s) => (s.id === updated.id ? updated : s)) });
+  }
+
+  const addSet = (exerciseId: number, template?: WorkoutSet) =>
+    run(async () => {
+      const created = await post<WorkoutSet>(`/workouts/${w.id}/sets`, {
+        exerciseId,
+        reps: template?.reps ?? 5,
+        weightKg: template?.weightKg ?? 0,
+        completed: false,
+      });
+      setData({ ...w, sets: [...w.sets, created] });
+    });
+
+  const updateSet = (set: WorkoutSet, changes: SetChanges) =>
+    run(async () => {
+      replaceSet(
+        await put<WorkoutSet>(`/workouts/${w.id}/sets/${set.id}`, {
+          exerciseId: set.exerciseId,
+          ...changes,
+        }),
+      );
+    });
+
+  const deleteSet = (set: WorkoutSet) =>
+    run(async () => {
+      await del(`/workouts/${w.id}/sets/${set.id}`);
+      setData({ ...w, sets: w.sets.filter((s) => s.id !== set.id) });
+    });
+
+  const finish = () =>
+    run(async () => {
+      setData(await post<Workout>(`/workouts/${w.id}/finish`));
+    });
+
+  function pick(e: Exercise) {
+    setPicking(false);
+    addSet(e.id);
+  }
+
+  const groups = groupSets(w.sets);
+  return (
+    <>
+      <div className="page-header">
+        <div>
+          <h1>{w.name}</h1>
+          <div className="muted small">
+            {formatDate(w.startedAt)} · {formatTime(w.startedAt)}
+            {w.finishedAt && ` · ${formatDuration(w.startedAt, w.finishedAt)}`}
+          </div>
+        </div>
+        {!w.finishedAt && (
+          <button className="btn primary" onClick={finish}>
+            Finish workout
+          </button>
+        )}
+      </div>
+      {actionError && <p className="alert">{actionError}</p>}
+
+      {groups.length === 0 && <p className="empty">No exercises yet. Add one to get started.</p>}
+      {groups.map((g) => {
+        let working = 0;
+        return (
+          <section key={g.exerciseId} className="card exercise-block">
+            <h2>{g.exerciseName}</h2>
+            <table className="sets">
+              <thead>
+                <tr>
+                  <th>Set</th>
+                  <th>kg</th>
+                  <th>Reps</th>
+                  <th>RPE</th>
+                  <th>Done</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {g.sets.map((s) => (
+                  <SetRow
+                    key={s.id}
+                    set={s}
+                    index={s.warmup ? 0 : ++working}
+                    onChange={(c) => updateSet(s, c)}
+                    onDelete={() => deleteSet(s)}
+                  />
+                ))}
+              </tbody>
+            </table>
+            <button className="btn small" onClick={() => addSet(g.exerciseId, g.sets.at(-1))}>
+              Add set
+            </button>
+          </section>
+        );
+      })}
+
+      {picking ? (
+        <ExercisePicker onPick={pick} onCancel={() => setPicking(false)} />
+      ) : (
+        <button className="btn" onClick={() => setPicking(true)}>
+          Add exercise
+        </button>
+      )}
+      <p>
+        <Link to="/workouts">Back to workouts</Link>
+      </p>
+    </>
+  );
+}
