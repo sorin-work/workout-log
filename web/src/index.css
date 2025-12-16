@@ -361,3 +361,26 @@ tr.set.done {
   gap: 1rem;
   margin-top: 1rem;
 }
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.notes {
+  margin-bottom: 1rem;
+  white-space: normal;
+}
+
+.page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.btn.danger {
+  color: #cf222e;
+  border-color: #ff8182;
+  background: #fff;
+}

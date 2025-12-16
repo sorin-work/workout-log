@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { del, errorMessage, post, put } from '../api/client';
 import type { Exercise, Workout, WorkoutSet } from '../api/types';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { SetRow, type SetChanges } from '../components/SetRow';
+import { WorkoutDetailsForm } from '../components/WorkoutDetailsForm';
 import { formatDate, formatDuration, formatTime } from '../lib/format';
 import { groupSets } from '../lib/groupSets';
 import { useFetch } from '../lib/useFetch';
@@ -11,7 +12,9 @@ import { useFetch } from '../lib/useFetch';
 export default function WorkoutPage() {
   const { id } = useParams();
   const { data: workout, error, loading, setData } = useFetch<Workout>(`/workouts/${id}`);
+  const navigate = useNavigate();
   const [picking, setPicking] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [actionError, setActionError] = useState('');
 
   if (loading && !workout) return <p className="muted">Loading…</p>;
@@ -64,6 +67,13 @@ export default function WorkoutPage() {
       setData(await post<Workout>(`/workouts/${w.id}/finish`));
     });
 
+  const remove = () =>
+    run(async () => {
+      if (!window.confirm('Delete this workout and all of its sets?')) return;
+      await del(`/workouts/${w.id}`);
+      navigate('/workouts', { replace: true });
+    });
+
   function pick(e: Exercise) {
     setPicking(false);
     addSet(e.id);
@@ -80,13 +90,35 @@ export default function WorkoutPage() {
             {w.finishedAt && ` · ${formatDuration(w.startedAt, w.finishedAt)}`}
           </div>
         </div>
-        {!w.finishedAt && (
-          <button className="btn primary" onClick={finish}>
-            Finish workout
+        <div className="actions">
+          <button className="btn" onClick={() => setEditing(true)}>
+            Edit
           </button>
-        )}
+          {!w.finishedAt && (
+            <button className="btn primary" onClick={finish}>
+              Finish workout
+            </button>
+          )}
+        </div>
       </div>
       {actionError && <p className="alert">{actionError}</p>}
+      {editing ? (
+        <WorkoutDetailsForm
+          workout={w}
+          onCancel={() => setEditing(false)}
+          onSaved={(saved) => {
+            setData(saved);
+            setEditing(false);
+          }}
+        />
+      ) : (
+        w.notes && (
+          <div
+            className="card notes"
+            dangerouslySetInnerHTML={{ __html: w.notes.replace(/\n/g, '<br>') }}
+          />
+        )
+      )}
 
       {groups.length === 0 && <p className="empty">No exercises yet. Add one to get started.</p>}
       {groups.map((g) => {
@@ -131,9 +163,12 @@ export default function WorkoutPage() {
           Add exercise
         </button>
       )}
-      <p>
+      <div className="page-footer">
         <Link to="/workouts">Back to workouts</Link>
-      </p>
+        <button className="btn danger small" onClick={remove}>
+          Delete workout
+        </button>
+      </div>
     </>
   );
 }
