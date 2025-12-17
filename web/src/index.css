@@ -384,3 +384,14 @@ tr.set.done {
   border-color: #ff8182;
   background: #fff;
 }
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge.muted-badge {
+  background: #eaeef2;
+  color: #656d76;
+}

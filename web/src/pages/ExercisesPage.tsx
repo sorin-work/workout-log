@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { errorMessage, post } from '../api/client';
 import { MUSCLE_GROUPS, EQUIPMENT, type Exercise } from '../api/types';
 import { ExerciseForm } from '../components/ExerciseForm';
 import { useFetch } from '../lib/useFetch';
@@ -8,13 +9,27 @@ export default function ExercisesPage() {
   const [q, setQ] = useState('');
   const [muscle, setMuscle] = useState('');
   const [equipment, setEquipment] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
 
   const params = new URLSearchParams();
   if (q.trim()) params.set('q', q.trim());
   if (muscle) params.set('muscle', muscle);
   if (equipment) params.set('equipment', equipment);
+  if (showArchived) params.set('archived', 'true');
   const { data, error, loading, reload } = useFetch<Exercise[]>(`/exercises?${params}`);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Exercise | null>(null);
+  const [actionError, setActionError] = useState('');
+
+  async function setArchived(e: Exercise, archived: boolean) {
+    setActionError('');
+    try {
+      await post(`/exercises/${e.id}/${archived ? 'archive' : 'restore'}`);
+      reload();
+    } catch (err) {
+      setActionError(errorMessage(err));
+    }
+  }
 
   return (
     <>
@@ -26,6 +41,17 @@ export default function ExercisesPage() {
           </button>
         )}
       </div>
+      {editing && (
+        <ExerciseForm
+          key={editing.id}
+          exercise={editing}
+          onCancel={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            reload();
+          }}
+        />
+      )}
       {creating && (
         <ExerciseForm
           onCancel={() => setCreating(false)}
@@ -58,7 +84,16 @@ export default function ExercisesPage() {
             </option>
           ))}
         </select>
+        <label className="chip">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          />
+          Show archived
+        </label>
       </div>
+      {actionError && <p className="alert">{actionError}</p>}
       {error && <p className="alert">{error}</p>}
       {loading && !data && <p className="muted">Loading…</p>}
       {data && data.length === 0 && <p className="empty">No exercises match these filters.</p>}
@@ -69,12 +104,25 @@ export default function ExercisesPage() {
               <div>
                 <strong>{e.name}</strong>
                 {e.custom && <span className="badge">Custom</span>}
+                {e.archivedAt && <span className="badge muted-badge">Archived</span>}
                 <div className="muted small">
                   {capitalize(e.primaryMuscle)}
                   {e.secondaryMuscles.length > 0 && ` · ${e.secondaryMuscles.join(', ')}`}
                 </div>
               </div>
-              <span className="muted small">{capitalize(e.equipment)}</span>
+              <div className="row-actions">
+                <span className="muted small">{capitalize(e.equipment)}</span>
+                {e.custom && (
+                  <>
+                    <button className="btn small" onClick={() => setEditing(e)}>
+                      Edit
+                    </button>
+                    <button className="btn small" onClick={() => setArchived(e, !e.archivedAt)}>
+                      {e.archivedAt ? 'Restore' : 'Archive'}
+                    </button>
+                  </>
+                )}
+              </div>
             </li>
           ))}
         </ul>
