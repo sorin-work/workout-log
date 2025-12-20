@@ -51,7 +51,15 @@ export function SetRow({ set, index, onChange, onDelete }: Props) {
 
   return (
     <tr className={set.completed ? 'set done' : 'set'}>
-      <td className="muted">{set.warmup ? 'W' : index}</td>
+      <td>
+        <button
+          className={set.warmup ? 'set-tag warmup' : 'set-tag'}
+          title={set.warmup ? 'Warm-up set (click to make it a working set)' : 'Mark as warm-up'}
+          onClick={() => commit({ warmup: !set.warmup })}
+        >
+          {set.warmup ? 'W' : index}
+        </button>
+      </td>
       <td>
         <input
           aria-label="Weight"

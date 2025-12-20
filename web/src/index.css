@@ -406,3 +406,22 @@ tr.set.done {
   font-size: 1.1rem;
   margin: 1.75rem 0 0.75rem;
 }
+
+.set-tag {
+  min-width: 1.8rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: #656d76;
+  font: inherit;
+  cursor: pointer;
+}
+
+.set-tag:hover {
+  border-color: #d0d7de;
+}
+
+.set-tag.warmup {
+  color: #9a6700;
+  background: #fff8c5;
+}
