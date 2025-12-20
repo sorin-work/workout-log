@@ -395,3 +395,14 @@ tr.set.done {
   background: #eaeef2;
   color: #656d76;
 }
+
+.highlight {
+  border-color: #54aeff;
+  background: #ddf4ff;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  margin: 1.75rem 0 0.75rem;
+}

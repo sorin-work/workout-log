@@ -1,14 +1,19 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { errorMessage, post } from '../api/client';
-import type { Workout } from '../api/types';
+import type { Page, Workout, WorkoutSummary } from '../api/types';
 import { useAuth } from '../auth/context';
+import { formatDate } from '../lib/format';
+import { formatVolume } from '../lib/units';
+import { useFetch } from '../lib/useFetch';
 
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const recent = useFetch<Page<WorkoutSummary>>('/workouts?pageSize=5');
+  const inProgress = recent.data?.items.find((w) => !w.finishedAt);
 
   async function start() {
     setBusy(true);
@@ -25,9 +30,32 @@ export default function HomePage() {
     <>
       <h1>Welcome back{user?.displayName ? `, ${user.displayName}` : ''}</h1>
       {error && <p className="alert">{error}</p>}
+      {inProgress && (
+        <div className="card highlight">
+          <strong>{inProgress.name}</strong> is still in progress.{' '}
+          <Link to={`/workouts/${inProgress.id}`}>Continue</Link>
+        </div>
+      )}
       <button className="btn primary" onClick={start} disabled={busy}>
         Start an empty workout
       </button>
+
+      <h2 className="section-title">Recent workouts</h2>
+      {recent.data && recent.data.items.length === 0 && (
+        <p className="muted">Nothing logged yet. Your workouts will show up here.</p>
+      )}
+      {recent.data && recent.data.items.length > 0 && (
+        <ul className="list card">
+          {recent.data.items.map((w) => (
+            <li key={w.id} className="list-row">
+              <Link to={`/workouts/${w.id}`}>{w.name}</Link>
+              <span className="muted small">
+                {formatDate(w.startedAt)} · {formatVolume(w.volumeKg, 'kg')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }
