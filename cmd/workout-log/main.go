@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	_ "time/tzdata" // user time zones work without zoneinfo on the host
 
 	"github.com/sorin-work/workout-log/internal/api"
 	"github.com/sorin-work/workout-log/internal/config"
