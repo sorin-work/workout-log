@@ -5,6 +5,7 @@ const links = [
   { to: '/', label: 'Home', end: true },
   { to: '/workouts', label: 'Workouts' },
   { to: '/exercises', label: 'Exercises' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 export function Layout() {

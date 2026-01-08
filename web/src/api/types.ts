@@ -2,6 +2,8 @@ export interface User {
   id: number;
   email: string;
   displayName: string;
+  unit: 'kg' | 'lb';
+  timezone: string;
   createdAt: string;
 }
 

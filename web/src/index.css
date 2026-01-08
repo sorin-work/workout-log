@@ -425,3 +425,15 @@ tr.set.done {
   color: #9a6700;
   background: #fff8c5;
 }
+
+.narrow {
+  max-width: 520px;
+}
+
+.success {
+  background: #dafbe1;
+  border: 1px solid #4ac26b;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+}

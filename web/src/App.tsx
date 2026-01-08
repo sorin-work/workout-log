@@ -6,6 +6,7 @@ import ExercisesPage from './pages/ExercisesPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
+import SettingsPage from './pages/SettingsPage';
 import SignupPage from './pages/SignupPage';
 import WorkoutPage from './pages/WorkoutPage';
 import WorkoutsPage from './pages/WorkoutsPage';
@@ -26,6 +27,7 @@ export default function App() {
           >
             <Route index element={<HomePage />} />
             <Route path="exercises" element={<ExercisesPage />} />
+            <Route path="settings" element={<SettingsPage />} />
             <Route path="workouts" element={<WorkoutsPage />} />
             <Route path="workouts/:id" element={<WorkoutPage />} />
             <Route path="*" element={<NotFoundPage />} />
