@@ -8,11 +8,13 @@ import { WorkoutDetailsForm } from '../components/WorkoutDetailsForm';
 import { formatDate, formatDuration, formatTime } from '../lib/format';
 import { groupSets } from '../lib/groupSets';
 import { useFetch } from '../lib/useFetch';
+import { useUnit } from '../lib/useUnit';
 
 export default function WorkoutPage() {
   const { id } = useParams();
   const { data: workout, error, loading, setData } = useFetch<Workout>(`/workouts/${id}`);
   const navigate = useNavigate();
+  const unit = useUnit();
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -130,7 +132,7 @@ export default function WorkoutPage() {
               <thead>
                 <tr>
                   <th>Set</th>
-                  <th>kg</th>
+                  <th>{unit}</th>
                   <th>Reps</th>
                   <th>RPE</th>
                   <th>Done</th>
@@ -143,6 +145,7 @@ export default function WorkoutPage() {
                     key={s.id}
                     set={s}
                     index={s.warmup ? 0 : ++working}
+                    unit={unit}
                     onChange={(c) => updateSet(s, c)}
                     onDelete={() => deleteSet(s)}
                   />

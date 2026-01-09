@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { formatVolume, formatWeight, fromKg, trimNumber } from './units';
+import { formatVolume, formatWeight, fromKg, toKg, trimNumber } from './units';
 
 describe('units', () => {
   it('converts kilograms to pounds', () => {
     expect(fromKg(100, 'lb')).toBeCloseTo(220.462, 3);
     expect(fromKg(100, 'kg')).toBe(100);
+  });
+
+  it('converts typed weights back to kilograms', () => {
+    expect(toKg(80, 'kg')).toBe(80);
+    expect(toKg(220.462, 'lb')).toBeCloseTo(100, 1);
+    expect(toKg(0, 'lb')).toBe(0);
   });
 
   it('trims trailing zeros', () => {

@@ -3,9 +3,11 @@ import type { Page, WorkoutSummary } from '../api/types';
 import { formatDate, formatDuration } from '../lib/format';
 import { formatVolume } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
+import { useUnit } from '../lib/useUnit';
 
 export default function WorkoutsPage() {
   const [params, setParams] = useSearchParams();
+  const unit = useUnit();
   const page = Math.max(1, Number(params.get('page')) || 1);
   const { data, error, loading } = useFetch<Page<WorkoutSummary>>(`/workouts?page=${page}`);
 
@@ -44,7 +46,7 @@ export default function WorkoutsPage() {
               <div className="muted small right">
                 {w.exerciseCount} exercises · {w.setCount} sets
                 <br />
-                {formatVolume(w.volumeKg, 'kg')}
+                {formatVolume(w.volumeKg, unit)}
               </div>
             </li>
           ))}

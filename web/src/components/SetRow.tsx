@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { WorkoutSet } from '../api/types';
+import { fromKg, toKg, trimNumber, type Unit } from '../lib/units';
 
 export interface SetChanges {
   reps: number;
@@ -12,6 +13,7 @@ export interface SetChanges {
 interface Props {
   set: WorkoutSet;
   index: number;
+  unit: Unit;
   onChange(changes: SetChanges): void;
   onDelete(): void;
 }
@@ -21,15 +23,15 @@ function parseNumber(s: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function SetRow({ set, index, onChange, onDelete }: Props) {
+export function SetRow({ set, index, unit, onChange, onDelete }: Props) {
   const [reps, setReps] = useState(String(set.reps));
-  const [weight, setWeight] = useState(String(set.weightKg));
+  const [weight, setWeight] = useState(trimNumber(fromKg(set.weightKg, unit), 2));
   const [rpe, setRpe] = useState(set.rpe === null ? '' : String(set.rpe));
 
   function current(): SetChanges {
     return {
       reps: Math.round(parseNumber(reps)),
-      weightKg: parseNumber(weight),
+      weightKg: toKg(parseNumber(weight), unit),
       rpe: rpe.trim() === '' ? null : parseNumber(rpe),
       completed: set.completed,
       warmup: set.warmup,
@@ -62,7 +64,7 @@ export function SetRow({ set, index, onChange, onDelete }: Props) {
       </td>
       <td>
         <input
-          aria-label="Weight"
+          aria-label={`Weight (${unit})`}
           inputMode="decimal"
           value={weight}
           onChange={(e) => setWeight(e.target.value)}

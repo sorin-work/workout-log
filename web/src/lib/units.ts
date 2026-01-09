@@ -7,6 +7,12 @@ export function fromKg(kg: number, unit: Unit): number {
   return unit === 'lb' ? kg / KG_PER_LB : kg;
 }
 
+/** Converts a weight typed in the display unit to kilograms for the API. */
+export function toKg(value: number, unit: Unit): number {
+  if (unit === 'kg') return value;
+  return Math.round(value * KG_PER_LB * 10) / 10;
+}
+
 /** Trims a number to at most `decimals` places without trailing zeros. */
 export function trimNumber(n: number, decimals = 1): string {
   const f = 10 ** decimals;

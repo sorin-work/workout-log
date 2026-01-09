@@ -6,10 +6,12 @@ import { useAuth } from '../auth/context';
 import { formatDate } from '../lib/format';
 import { formatVolume } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
+import { useUnit } from '../lib/useUnit';
 
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const unit = useUnit();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const recent = useFetch<Page<WorkoutSummary>>('/workouts?pageSize=5');
@@ -50,7 +52,7 @@ export default function HomePage() {
             <li key={w.id} className="list-row">
               <Link to={`/workouts/${w.id}`}>{w.name}</Link>
               <span className="muted small">
-                {formatDate(w.startedAt)} · {formatVolume(w.volumeKg, 'kg')}
+                {formatDate(w.startedAt)} · {formatVolume(w.volumeKg, unit)}
               </span>
             </li>
           ))}
