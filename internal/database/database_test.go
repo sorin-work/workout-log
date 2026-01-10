@@ -10,7 +10,7 @@ import (
 
 func TestMigrationsCreateTables(t *testing.T) {
 	pool := testdb.New(t)
-	for _, table := range []string{"users", "sessions", "exercises", "workouts", "workout_sets"} {
+	for _, table := range []string{"users", "sessions", "exercises", "workouts", "workout_sets", "templates", "template_exercises"} {
 		var exists bool
 		err := pool.QueryRow(context.Background(),
 			`SELECT EXISTS (SELECT 1 FROM information_schema.tables
