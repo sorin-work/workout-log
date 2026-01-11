@@ -12,6 +12,7 @@ type Workout struct {
 	Notes      string     `json:"notes"`
 	StartedAt  time.Time  `json:"startedAt"`
 	FinishedAt *time.Time `json:"finishedAt"`
+	TemplateID *int64     `json:"templateId"`
 	Sets       []Set      `json:"sets"`
 }
 
@@ -47,11 +48,11 @@ type WorkoutInput struct {
 	FinishedAt *time.Time
 }
 
-const workoutColumns = `id, name, notes, started_at, finished_at`
+const workoutColumns = `id, name, notes, started_at, finished_at, template_id`
 
 func scanWorkout(row interface{ Scan(...any) error }) (Workout, error) {
 	var w Workout
-	err := row.Scan(&w.ID, &w.Name, &w.Notes, &w.StartedAt, &w.FinishedAt)
+	err := row.Scan(&w.ID, &w.Name, &w.Notes, &w.StartedAt, &w.FinishedAt, &w.TemplateID)
 	w.Sets = []Set{}
 	return w, err
 }

@@ -161,3 +161,20 @@ func (s *Server) handleDeleteTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *Server) handleStartTemplate(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	wo, err := s.store.StartWorkoutFromTemplate(r.Context(), currentUser(r.Context()).ID, id, s.now())
+	if errors.Is(err, store.ErrNotFound) {
+		writeNotFound(w, "Template")
+		return
+	}
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, wo)
+}

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -179,4 +180,36 @@ func (s *Store) DeleteTemplate(ctx context.Context, userID, id int64) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+// StartWorkoutFromTemplate creates a workout with the template's sets filled
+// in, ready to be ticked off.
+func (s *Store) StartWorkoutFromTemplate(ctx context.Context, userID, templateID int64, at time.Time) (Workout, error) {
+	t, err := s.TemplateByID(ctx, userID, templateID)
+	if err != nil {
+		return Workout{}, err
+	}
+	var workoutID int64
+	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx, `INSERT INTO workouts (user_id, name, notes, started_at, template_id)
+			VALUES ($1, $2, '', $3, $4) RETURNING id`, userID, t.Name, at, t.ID).Scan(&workoutID); err != nil {
+			return err
+		}
+		pos := 0
+		for _, te := range t.Exercises {
+			for i := 0; i < te.Sets; i++ {
+				pos++
+				if _, err := tx.Exec(ctx, `INSERT INTO workout_sets
+					(workout_id, exercise_id, position, reps, weight_kg)
+					VALUES ($1, $2, $3, $4, $5)`, workoutID, te.ExerciseID, pos, te.Reps, te.WeightKg); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return Workout{}, err
+	}
+	return s.WorkoutByID(ctx, userID, workoutID)
 }

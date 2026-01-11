@@ -109,3 +109,29 @@ func TestDeleteTemplate(t *testing.T) {
 	c.mustDo(http.MethodDelete, fmt.Sprintf("/api/templates/%d", tpl.ID), nil, http.StatusNoContent, nil)
 	c.mustDo(http.MethodGet, fmt.Sprintf("/api/templates/%d", tpl.ID), nil, http.StatusNotFound, nil)
 }
+
+func TestStartWorkoutFromTemplate(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("t@example.com")
+	squat := exerciseID(t, c, "Back Squat")
+	bench := exerciseID(t, c, "Bench Press")
+	tpl := createTemplate(t, c, templateBody("Day A", row(squat, 3, 5, 100), row(bench, 2, 8, 70)))
+
+	var w store.Workout
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/templates/%d/start", tpl.ID), nil, http.StatusCreated, &w)
+	if w.Name != "Day A" || w.TemplateID == nil || *w.TemplateID != tpl.ID {
+		t.Fatalf("workout: %+v", w)
+	}
+	if len(w.Sets) != 5 {
+		t.Fatalf("expected 5 planned sets, got %d", len(w.Sets))
+	}
+	if s := w.Sets[0]; s.ExerciseID != squat || s.Reps != 5 || s.WeightKg != 100 || s.Completed {
+		t.Fatalf("first set: %+v", s)
+	}
+	if s := w.Sets[4]; s.ExerciseID != bench || s.Position != 5 {
+		t.Fatalf("last set: %+v", s)
+	}
+
+	other := a.signup("other@example.com")
+	other.mustDo(http.MethodPost, fmt.Sprintf("/api/templates/%d/start", tpl.ID), nil, http.StatusNotFound, nil)
+}
