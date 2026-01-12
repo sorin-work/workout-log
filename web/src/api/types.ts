@@ -35,6 +35,7 @@ export interface Workout {
   notes: string;
   startedAt: string;
   finishedAt: string | null;
+  templateId: number | null;
   sets: WorkoutSet[];
 }
 
@@ -80,3 +81,21 @@ export const EQUIPMENT = [
   'band',
   'other',
 ] as const;
+
+export interface TemplateExercise {
+  id: number;
+  exerciseId: number;
+  exerciseName: string;
+  position: number;
+  sets: number;
+  reps: number;
+  weightKg: number;
+  restSeconds: number;
+}
+
+export interface Template {
+  id: number;
+  name: string;
+  notes: string;
+  exercises: TemplateExercise[];
+}
