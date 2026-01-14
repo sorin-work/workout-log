@@ -135,3 +135,22 @@ func TestStartWorkoutFromTemplate(t *testing.T) {
 	other := a.signup("other@example.com")
 	other.mustDo(http.MethodPost, fmt.Sprintf("/api/templates/%d/start", tpl.ID), nil, http.StatusNotFound, nil)
 }
+
+func TestTemplateProgressionSettings(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("t@example.com")
+	r := row(exerciseID(t, c, "Back Squat"), 5, 5, 100)
+	r["incrementKg"] = 2.5
+	r["deloadAfter"] = 3
+	r["deloadPercent"] = 10
+	tpl := createTemplate(t, c, templateBody("5x5", r))
+	te := tpl.Exercises[0]
+	if te.IncrementKg != 2.5 || te.DeloadAfter != 3 || te.DeloadPercent != 10 || te.Failures != 0 {
+		t.Fatalf("progression: %+v", te)
+	}
+	r["deloadPercent"] = 80
+	res := c.do(http.MethodPost, "/api/templates", templateBody("bad", r))
+	if res.Status != http.StatusUnprocessableEntity || errorFields(t, res)["exercises.0.deloadPercent"] == "" {
+		t.Fatalf("status %d: %s", res.Status, res.Body)
+	}
+}

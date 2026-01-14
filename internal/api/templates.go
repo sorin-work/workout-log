@@ -22,6 +22,10 @@ type templateRequest struct {
 		Reps        int     `json:"reps"`
 		WeightKg    float64 `json:"weightKg"`
 		RestSeconds *int    `json:"restSeconds"`
+
+		IncrementKg   float64 `json:"incrementKg"`
+		DeloadAfter   int     `json:"deloadAfter"`
+		DeloadPercent float64 `json:"deloadPercent"`
 	} `json:"exercises"`
 }
 
@@ -57,6 +61,12 @@ func (s *Server) validateTemplate(w http.ResponseWriter, r *http.Request, req te
 			fields[key+".weightKg"] = "Weight must be between 0 and 1000 kg."
 		case rest < 0 || rest > 1800:
 			fields[key+".restSeconds"] = "Rest must be between 0 and 30 minutes."
+		case e.IncrementKg < 0 || e.IncrementKg > 50:
+			fields[key+".incrementKg"] = "Increment must be between 0 and 50 kg."
+		case e.DeloadAfter < 0 || e.DeloadAfter > 10:
+			fields[key+".deloadAfter"] = "Deload after 0 to 10 failed sessions."
+		case e.DeloadPercent < 0 || e.DeloadPercent > 50:
+			fields[key+".deloadPercent"] = "Deload must be between 0 and 50%."
 		}
 		if _, err := s.store.ExerciseByID(r.Context(), userID, e.ExerciseID); err != nil {
 			if !errors.Is(err, store.ErrNotFound) {
@@ -68,6 +78,7 @@ func (s *Server) validateTemplate(w http.ResponseWriter, r *http.Request, req te
 		in.Exercises = append(in.Exercises, store.TemplateExerciseInput{
 			ID: e.ID, ExerciseID: e.ExerciseID, Sets: e.Sets, Reps: e.Reps,
 			WeightKg: e.WeightKg, RestSeconds: rest,
+			IncrementKg: e.IncrementKg, DeloadAfter: e.DeloadAfter, DeloadPercent: e.DeloadPercent,
 		})
 	}
 	if len(fields) > 0 {
