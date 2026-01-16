@@ -198,5 +198,15 @@ func (s *Server) handleFinishWorkout(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, wo)
+	changes, err := s.store.ApplyProgression(r.Context(), wo)
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, finishResponse{Workout: wo, Progression: changes})
+}
+
+type finishResponse struct {
+	Workout     store.Workout             `json:"workout"`
+	Progression []store.ProgressionChange `json:"progression"`
 }

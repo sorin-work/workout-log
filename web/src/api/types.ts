@@ -99,3 +99,18 @@ export interface Template {
   notes: string;
   exercises: TemplateExercise[];
 }
+
+export interface ProgressionChange {
+  templateExerciseId: number;
+  exerciseId: number;
+  exerciseName: string;
+  outcome: 'increased' | 'kept' | 'deloaded';
+  previousWeightKg: number;
+  weightKg: number;
+  failures: number;
+}
+
+export interface FinishResult {
+  workout: Workout;
+  progression: ProgressionChange[];
+}

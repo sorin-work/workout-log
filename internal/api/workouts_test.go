@@ -181,8 +181,12 @@ func TestFinishWorkout(t *testing.T) {
 	a := newTestAPI(t)
 	c := a.signup("w@example.com")
 	w := createWorkout(t, c, "Day A", time.Now().Add(-45*time.Minute))
-	var got store.Workout
-	c.mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/finish", w.ID), nil, http.StatusOK, &got)
+	var res finishResponse
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/finish", w.ID), nil, http.StatusOK, &res)
+	got := res.Workout
+	if len(res.Progression) != 0 {
+		t.Fatalf("a workout without a template should not progress anything: %+v", res.Progression)
+	}
 	if got.FinishedAt == nil || got.FinishedAt.Before(got.StartedAt) {
 		t.Fatalf("finishedAt = %v", got.FinishedAt)
 	}

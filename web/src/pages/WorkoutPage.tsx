@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { del, errorMessage, post, put } from '../api/client';
-import type { Exercise, Workout, WorkoutSet } from '../api/types';
+import type { Exercise, FinishResult, Workout, WorkoutSet } from '../api/types';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { SetRow, type SetChanges } from '../components/SetRow';
 import { WorkoutDetailsForm } from '../components/WorkoutDetailsForm';
@@ -66,7 +66,8 @@ export default function WorkoutPage() {
 
   const finish = () =>
     run(async () => {
-      setData(await post<Workout>(`/workouts/${w.id}/finish`));
+      const res = await post<FinishResult>(`/workouts/${w.id}/finish`);
+      setData(res.workout);
     });
 
   const remove = () =>
