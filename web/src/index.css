@@ -479,3 +479,7 @@ a.btn.primary {
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
+.card {
+  overflow-x: auto;
+}

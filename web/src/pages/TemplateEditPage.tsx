@@ -17,6 +17,9 @@ interface Row {
   reps: string;
   weight: string;
   rest: string;
+  increment: string;
+  deloadAfter: string;
+  deloadPercent: string;
 }
 
 let nextKey = 0;
@@ -32,6 +35,9 @@ function toRows(t: Template, unit: Unit): Row[] {
     reps: String(e.reps),
     weight: trimNumber(fromKg(e.weightKg, unit), 2),
     rest: String(e.restSeconds),
+    increment: trimNumber(fromKg(e.incrementKg, unit), 2),
+    deloadAfter: String(e.deloadAfter),
+    deloadPercent: String(e.deloadPercent),
   }));
 }
 
@@ -80,6 +86,9 @@ function TemplateForm({ template }: { template?: Template }) {
         reps: '8',
         weight: '0',
         rest: '120',
+        increment: '0',
+        deloadAfter: '0',
+        deloadPercent: '10',
       },
     ]);
   }
@@ -99,6 +108,9 @@ function TemplateForm({ template }: { template?: Template }) {
         reps: Number(r.reps),
         weightKg: toKg(Number(r.weight.replace(',', '.')) || 0, unit),
         restSeconds: Number(r.rest),
+        incrementKg: toKg(Number(r.increment.replace(',', '.')) || 0, unit),
+        deloadAfter: Number(r.deloadAfter) || 0,
+        deloadPercent: Number(r.deloadPercent) || 0,
       })),
     };
     try {
@@ -139,6 +151,11 @@ function TemplateForm({ template }: { template?: Template }) {
                 <th>Reps</th>
                 <th>{unit}</th>
                 <th>Rest (s)</th>
+                <th title="Added after every session where all sets were completed">+{unit}</th>
+                <th title="Deload after this many failed sessions in a row (0 = never)">
+                  Deload after
+                </th>
+                <th>Deload %</th>
                 <th />
               </tr>
             </thead>
@@ -183,6 +200,34 @@ function TemplateForm({ template }: { template?: Template }) {
                       value={r.rest}
                       onChange={(e) => update(r.key, { rest: e.target.value })}
                     />
+                  </td>
+                  <td>
+                    <input
+                      aria-label="Increment"
+                      inputMode="decimal"
+                      value={r.increment}
+                      onChange={(e) => update(r.key, { increment: e.target.value })}
+                    />
+                    <FieldError message={fields[`exercises.${i}.incrementKg`]} />
+                  </td>
+                  <td>
+                    <input
+                      aria-label="Deload after failures"
+                      inputMode="numeric"
+                      value={r.deloadAfter}
+                      onChange={(e) => update(r.key, { deloadAfter: e.target.value })}
+                    />
+                    <FieldError message={fields[`exercises.${i}.deloadAfter`]} />
+                  </td>
+                  <td>
+                    <input
+                      aria-label="Deload percent"
+                      inputMode="decimal"
+                      value={r.deloadPercent}
+                      disabled={r.deloadAfter === '0' || r.deloadAfter === ''}
+                      onChange={(e) => update(r.key, { deloadPercent: e.target.value })}
+                    />
+                    <FieldError message={fields[`exercises.${i}.deloadPercent`]} />
                   </td>
                   <td className="row-actions">
                     <button

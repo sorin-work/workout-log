@@ -91,6 +91,10 @@ export interface TemplateExercise {
   reps: number;
   weightKg: number;
   restSeconds: number;
+  incrementKg: number;
+  deloadAfter: number;
+  deloadPercent: number;
+  failures: number;
 }
 
 export interface Template {

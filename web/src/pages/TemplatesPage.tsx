@@ -61,6 +61,11 @@ export default function TemplatesPage() {
                     {e.sets}×{e.reps}
                     {e.weightKg > 0 && ` @ ${formatWeight(e.weightKg, unit)}`}
                   </span>
+                  {e.incrementKg > 0 && (
+                    <span className="badge" title="Linear progression">
+                      +{formatWeight(e.incrementKg, unit)}
+                    </span>
+                  )}
                 </li>
               ))}
               {t.exercises.length === 0 && <li className="muted">No exercises yet</li>}
