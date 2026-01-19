@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { del, errorMessage, post, put } from '../api/client';
-import type { Exercise, FinishResult, Workout, WorkoutSet } from '../api/types';
+import type { Exercise, FinishResult, ProgressionChange, Workout, WorkoutSet } from '../api/types';
 import { ExercisePicker } from '../components/ExercisePicker';
+import { ProgressionSummary } from '../components/ProgressionSummary';
 import { SetRow, type SetChanges } from '../components/SetRow';
 import { WorkoutDetailsForm } from '../components/WorkoutDetailsForm';
 import { formatDate, formatDuration, formatTime } from '../lib/format';
@@ -17,6 +18,7 @@ export default function WorkoutPage() {
   const unit = useUnit();
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [progression, setProgression] = useState<ProgressionChange[] | null>(null);
   const [actionError, setActionError] = useState('');
 
   if (loading && !workout) return <p className="muted">Loading…</p>;
@@ -66,8 +68,11 @@ export default function WorkoutPage() {
 
   const finish = () =>
     run(async () => {
+      const open = w.sets.filter((s) => !s.completed).length;
+      if (open > 0 && !window.confirm(`${open} sets are not ticked off. Finish anyway?`)) return;
       const res = await post<FinishResult>(`/workouts/${w.id}/finish`);
       setData(res.workout);
+      setProgression(res.progression);
     });
 
   const remove = () =>
@@ -105,6 +110,13 @@ export default function WorkoutPage() {
         </div>
       </div>
       {actionError && <p className="alert">{actionError}</p>}
+      {progression && (
+        <ProgressionSummary
+          changes={progression}
+          unit={unit}
+          onClose={() => setProgression(null)}
+        />
+      )}
       {editing ? (
         <WorkoutDetailsForm
           workout={w}

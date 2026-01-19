@@ -483,3 +483,15 @@ a.btn.primary {
 .card {
   overflow-x: auto;
 }
+
+.progression h2 {
+  font-size: 1.05rem;
+}
+
+.outcome-increased strong {
+  color: #1a7f37;
+}
+
+.outcome-deloaded strong {
+  color: #9a6700;
+}
