@@ -63,6 +63,14 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Delete("/templates/{id}", s.handleDeleteTemplate)
 			r.Post("/templates/{id}/start", s.handleStartTemplate)
 
+			r.Get("/programs", s.handleListPrograms)
+			r.Post("/programs", s.handleCreateProgram)
+			r.Get("/programs/{id}", s.handleGetProgram)
+			r.Put("/programs/{id}", s.handleUpdateProgram)
+			r.Delete("/programs/{id}", s.handleDeleteProgram)
+			r.Post("/programs/{id}/activate", s.handleActivateProgram)
+			r.Post("/programs/{id}/start", s.handleStartProgram)
+
 			r.Get("/workouts", s.handleListWorkouts)
 			r.Post("/workouts", s.handleCreateWorkout)
 			r.Get("/workouts/{id}", s.handleGetWorkout)
