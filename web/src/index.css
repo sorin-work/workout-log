@@ -495,3 +495,29 @@ a.btn.primary {
 .outcome-deloaded strong {
   color: #9a6700;
 }
+
+.template-card.active {
+  border-color: #54aeff;
+}
+
+ol.rotation {
+  margin: 0 0 0.75rem;
+  padding-left: 1.4rem;
+}
+
+ol.rotation li.next {
+  font-weight: 600;
+}
+
+.label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+}
+
+.next-up {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { errorMessage, post } from '../api/client';
-import type { Page, Template, Workout, WorkoutSummary } from '../api/types';
+import type { Page, Program, Template, Workout, WorkoutSummary } from '../api/types';
 import { useAuth } from '../auth/context';
 import { formatDate } from '../lib/format';
 import { formatVolume } from '../lib/units';
@@ -18,6 +18,20 @@ export default function HomePage() {
   const inProgress = recent.data?.items.find((w) => !w.finishedAt);
 
   const templates = useFetch<Template[]>('/templates');
+  const programs = useFetch<Program[]>('/programs');
+  const active = programs.data?.find((p) => p.active && p.days.length > 0);
+  const nextDay = active?.days[active.nextPosition % active.days.length];
+
+  async function startProgram(p: Program) {
+    setBusy(true);
+    try {
+      const w = await post<Workout>(`/programs/${p.id}/start`);
+      navigate(`/workouts/${w.id}`);
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(false);
+    }
+  }
 
   async function start(template?: Template) {
     setBusy(true);
@@ -40,6 +54,17 @@ export default function HomePage() {
         <div className="card highlight">
           <strong>{inProgress.name}</strong> is still in progress.{' '}
           <Link to={`/workouts/${inProgress.id}`}>Continue</Link>
+        </div>
+      )}
+      {active && nextDay && (
+        <div className="card next-up">
+          <div>
+            <div className="muted small">Next in {active.name}</div>
+            <strong>{nextDay.templateName}</strong>
+          </div>
+          <button className="btn primary" onClick={() => startProgram(active)} disabled={busy}>
+            Start
+          </button>
         </div>
       )}
       <div className="start-buttons">

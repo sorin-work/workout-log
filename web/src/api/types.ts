@@ -118,3 +118,17 @@ export interface FinishResult {
   workout: Workout;
   progression: ProgressionChange[];
 }
+
+export interface ProgramDay {
+  position: number;
+  templateId: number;
+  templateName: string;
+}
+
+export interface Program {
+  id: number;
+  name: string;
+  active: boolean;
+  nextPosition: number;
+  days: ProgramDay[];
+}

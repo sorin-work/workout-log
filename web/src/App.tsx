@@ -6,6 +6,7 @@ import ExercisesPage from './pages/ExercisesPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
+import ProgramsPage from './pages/ProgramsPage';
 import SettingsPage from './pages/SettingsPage';
 import SignupPage from './pages/SignupPage';
 import TemplateEditPage from './pages/TemplateEditPage';
@@ -29,6 +30,7 @@ export default function App() {
           >
             <Route index element={<HomePage />} />
             <Route path="exercises" element={<ExercisesPage />} />
+            <Route path="programs" element={<ProgramsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="templates" element={<TemplatesPage />} />
             <Route path="templates/new" element={<TemplateEditPage />} />
