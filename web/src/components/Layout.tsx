@@ -7,6 +7,7 @@ const links = [
   { to: '/templates', label: 'Templates' },
   { to: '/programs', label: 'Programs' },
   { to: '/exercises', label: 'Exercises' },
+  { to: '/records', label: 'Records' },
   { to: '/settings', label: 'Settings' },
 ];
 

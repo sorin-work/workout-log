@@ -521,3 +521,23 @@ ol.rotation li.next {
   justify-content: space-between;
   margin-bottom: 1rem;
 }
+
+table.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.table th {
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #656d76;
+  padding: 0.4rem;
+  border-bottom: 1px solid #d0d7de;
+}
+
+table.table td {
+  padding: 0.5rem 0.4rem;
+  border-bottom: 1px solid #eaeef2;
+  vertical-align: top;
+}

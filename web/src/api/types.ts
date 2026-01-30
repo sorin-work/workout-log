@@ -132,3 +132,23 @@ export interface Program {
   nextPosition: number;
   days: ProgramDay[];
 }
+
+export interface RecordSet {
+  value: number;
+  weightKg: number;
+  reps: number;
+  workoutId: number;
+  performedAt: string;
+}
+
+export interface ExerciseRecords {
+  exerciseId: number;
+  exerciseName: string;
+  estimatedMax: RecordSet | null;
+  heaviest: RecordSet | null;
+  mostReps: RecordSet | null;
+  bestVolume: RecordSet | null;
+  repMaxes: Record<string, RecordSet>;
+  setCount: number;
+  lastDone: string;
+}
