@@ -541,3 +541,34 @@ table.table td {
   border-bottom: 1px solid #eaeef2;
   vertical-align: top;
 }
+
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart .grid-line {
+  stroke: #eaeef2;
+}
+
+.chart .axis-label {
+  font-size: 11px;
+  fill: #656d76;
+}
+
+.chart .line {
+  fill: none;
+  stroke: #1f6feb;
+  stroke-width: 2;
+}
+
+.chart .dot {
+  fill: #1f6feb;
+}
+
+.chart .tooltip {
+  font-size: 12px;
+  font-weight: 600;
+  fill: #1c2128;
+}
