@@ -46,3 +46,25 @@ func (s *Server) handleExerciseRecords(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, recs[0])
 }
+
+func (s *Server) handleExerciseProgress(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	userID := currentUser(r.Context()).ID
+	if _, err := s.store.ExerciseByID(r.Context(), userID, id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeNotFound(w, "Exercise")
+			return
+		}
+		writeInternal(w, r, err)
+		return
+	}
+	sets, err := s.store.LoggedSets(r.Context(), userID, id)
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, domain.ProgressSeries(sets, domain.Epley))
+}

@@ -56,6 +56,7 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Post("/exercises/{id}/archive", s.handleArchiveExercise(true))
 			r.Post("/exercises/{id}/restore", s.handleArchiveExercise(false))
 			r.Get("/exercises/{id}/records", s.handleExerciseRecords)
+			r.Get("/exercises/{id}/progress", s.handleExerciseProgress)
 			r.Get("/records", s.handleListRecords)
 
 			r.Get("/templates", s.handleListTemplates)

@@ -58,3 +58,25 @@ func TestExerciseRecordsEndpoint(t *testing.T) {
 	}
 	c.mustDo(http.MethodGet, "/api/exercises/999999/records", nil, http.StatusNotFound, nil)
 }
+
+func TestExerciseProgressEndpoint(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("r@example.com")
+	dl := exerciseID(t, c, "Deadlift")
+	for i, kg := range []float64{140, 145, 150} {
+		w := createWorkout(t, c, "Pull", time.Now().Add(time.Duration(i-5)*24*time.Hour))
+		addSet(t, c, w.ID, dl, 5, kg, true)
+		addSet(t, c, w.ID, dl, 5, kg-20, true)
+	}
+	var pts []domain.ProgressPoint
+	c.mustDo(http.MethodGet, fmt.Sprintf("/api/exercises/%d/progress", dl), nil, http.StatusOK, &pts)
+	if len(pts) != 3 {
+		t.Fatalf("points: %+v", pts)
+	}
+	if pts[0].TopWeightKg != 140 || pts[2].TopWeightKg != 150 || pts[2].Sets != 2 {
+		t.Fatalf("points: %+v", pts)
+	}
+	if pts[2].VolumeKg != 5*150+5*130 {
+		t.Fatalf("volume = %v", pts[2].VolumeKg)
+	}
+}
