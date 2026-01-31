@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthProvider';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
+import ExercisePage from './pages/ExercisePage';
 import ExercisesPage from './pages/ExercisesPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -31,6 +32,7 @@ export default function App() {
           >
             <Route index element={<HomePage />} />
             <Route path="exercises" element={<ExercisesPage />} />
+            <Route path="exercises/:id" element={<ExercisePage />} />
             <Route path="programs" element={<ProgramsPage />} />
             <Route path="records" element={<RecordsPage />} />
             <Route path="settings" element={<SettingsPage />} />

@@ -572,3 +572,44 @@ table.table td {
   font-weight: 600;
   fill: #1c2128;
 }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stat strong {
+  font-size: 1.3rem;
+}
+
+section.card {
+  margin-bottom: 1rem;
+}
+
+section.card h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.segmented button {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.7rem;
+  border: none;
+  background: #fff;
+  cursor: pointer;
+}
+
+.segmented button.active {
+  background: #1f6feb;
+  color: #fff;
+}

@@ -152,3 +152,13 @@ export interface ExerciseRecords {
   setCount: number;
   lastDone: string;
 }
+
+export interface ProgressPoint {
+  workoutId: number;
+  performedAt: string;
+  estimatedMax: number;
+  topWeightKg: number;
+  volumeKg: number;
+  sets: number;
+  reps: number;
+}

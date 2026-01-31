@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { errorMessage, post } from '../api/client';
 import { MUSCLE_GROUPS, EQUIPMENT, type Exercise } from '../api/types';
 import { ExerciseForm } from '../components/ExerciseForm';
@@ -102,7 +103,9 @@ export default function ExercisesPage() {
           {data.map((e) => (
             <li key={e.id} className="list-row">
               <div>
-                <strong>{e.name}</strong>
+                <Link to={`/exercises/${e.id}`}>
+                  <strong>{e.name}</strong>
+                </Link>
                 {e.custom && <span className="badge">Custom</span>}
                 {e.archivedAt && <span className="badge muted-badge">Archived</span>}
                 <div className="muted small">
