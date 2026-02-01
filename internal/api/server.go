@@ -16,6 +16,8 @@ type Options struct {
 	SessionTTL time.Duration
 	// SecureCookies marks the session cookie as Secure (HTTPS only).
 	SecureCookies bool
+	// WebDir, when set, is the directory of the built web app to serve.
+	WebDir string
 }
 
 // Server holds the dependencies shared by the HTTP handlers.
@@ -89,6 +91,9 @@ func NewServer(st *store.Store, opts Options) *Server {
 			writeError(w, http.StatusNotFound, "not_found", "No such endpoint.")
 		})
 	})
+	if opts.WebDir != "" {
+		r.Handle("/*", spaHandler(opts.WebDir))
+	}
 	s.router = r
 	return s
 }

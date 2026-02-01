@@ -49,9 +49,14 @@ func run() error {
 	st := store.New(pool)
 	go cleanupSessions(ctx, st, logger)
 
+	handler := api.NewServer(st, api.Options{
+		SessionTTL:    cfg.SessionTTL,
+		SecureCookies: cfg.SecureCookies,
+		WebDir:        cfg.WebDir,
+	})
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
-		Handler:           api.NewServer(st, api.Options{SessionTTL: cfg.SessionTTL, SecureCookies: cfg.SecureCookies}),
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	errc := make(chan error, 1)

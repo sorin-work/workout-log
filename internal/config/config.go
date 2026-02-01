@@ -16,6 +16,8 @@ type Config struct {
 	SessionTTL  time.Duration
 	// SecureCookies should be on when the app is served over HTTPS.
 	SecureCookies bool
+	// WebDir is the built web app to serve, if any.
+	WebDir string
 }
 
 // FromEnv reads the configuration, applying defaults for optional values.
@@ -28,6 +30,7 @@ func parse(getenv func(string) string) (Config, error) {
 		Port:        8080,
 		DatabaseURL: getenv("DATABASE_URL"),
 		LogLevel:    valueOr(getenv("LOG_LEVEL"), "info"),
+		WebDir:      getenv("WEB_DIR"),
 		SessionTTL:  30 * 24 * time.Hour,
 	}
 	if v := getenv("PORT"); v != "" {
