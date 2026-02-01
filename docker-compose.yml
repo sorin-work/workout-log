@@ -1,0 +1,23 @@
+name: workout-log
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: workout
+      POSTGRES_PASSWORD: workout
+      POSTGRES_DB: workout
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://workout:workout@db:5432/workout?sslmode=disable
+    depends_on:
+      - db
+    ports:
+      - '${WEB_PORT:-4413}:8080'
+
+volumes:
+  db-data:
