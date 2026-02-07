@@ -18,6 +18,8 @@ type Config struct {
 	SecureCookies bool
 	// WebDir is the built web app to serve, if any.
 	WebDir string
+	// SeedDemo creates the demo account on startup.
+	SeedDemo bool
 }
 
 // FromEnv reads the configuration, applying defaults for optional values.
@@ -53,6 +55,13 @@ func parse(getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("SECURE_COOKIES must be true or false, got %q", v)
 		}
 		cfg.SecureCookies = b
+	}
+	if v := getenv("SEED_DEMO"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return Config{}, fmt.Errorf("SEED_DEMO must be true or false, got %q", v)
+		}
+		cfg.SeedDemo = b
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")

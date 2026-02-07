@@ -15,6 +15,7 @@ import (
 	"github.com/sorin-work/workout-log/internal/api"
 	"github.com/sorin-work/workout-log/internal/config"
 	"github.com/sorin-work/workout-log/internal/database"
+	"github.com/sorin-work/workout-log/internal/seed"
 	"github.com/sorin-work/workout-log/internal/store"
 )
 
@@ -45,6 +46,15 @@ func run() error {
 		return err
 	}
 	logger.Info("database ready")
+	if cfg.SeedDemo {
+		created, err := seed.Demo(ctx, pool, time.Now())
+		if err != nil {
+			return fmt.Errorf("seed demo data: %w", err)
+		}
+		if created {
+			logger.Info("created demo account", "email", seed.DemoEmail)
+		}
+	}
 
 	st := store.New(pool)
 	go cleanupSessions(ctx, st, logger)

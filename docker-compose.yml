@@ -14,6 +14,8 @@ services:
     build: .
     environment:
       DATABASE_URL: postgres://workout:workout@db:5432/workout?sslmode=disable
+      # Creates demo@example.com / demo-password with half a year of workouts.
+      SEED_DEMO: ${SEED_DEMO:-true}
     depends_on:
       - db
     ports:
