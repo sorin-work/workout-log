@@ -613,3 +613,11 @@ section.card h2 {
   background: #1f6feb;
   color: #fff;
 }
+
+.chart .bar {
+  fill: #54aeff;
+}
+
+.chart .bar:hover {
+  fill: #1f6feb;
+}
