@@ -8,6 +8,7 @@ const links = [
   { to: '/programs', label: 'Programs' },
   { to: '/exercises', label: 'Exercises' },
   { to: '/records', label: 'Records' },
+  { to: '/volume', label: 'Volume' },
   { to: '/settings', label: 'Settings' },
 ];
 

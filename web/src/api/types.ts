@@ -162,3 +162,14 @@ export interface ProgressPoint {
   sets: number;
   reps: number;
 }
+
+export interface MuscleVolume {
+  sets: number;
+  volumeKg: number;
+}
+
+export interface WeekVolume {
+  weekStart: string;
+  muscles: Record<string, MuscleVolume>;
+  totalSets: number;
+}

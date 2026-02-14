@@ -13,6 +13,7 @@ import SettingsPage from './pages/SettingsPage';
 import SignupPage from './pages/SignupPage';
 import TemplateEditPage from './pages/TemplateEditPage';
 import TemplatesPage from './pages/TemplatesPage';
+import VolumePage from './pages/VolumePage';
 import WorkoutPage from './pages/WorkoutPage';
 import WorkoutsPage from './pages/WorkoutsPage';
 
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="exercises/:id" element={<ExercisePage />} />
             <Route path="programs" element={<ProgramsPage />} />
             <Route path="records" element={<RecordsPage />} />
+            <Route path="volume" element={<VolumePage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="templates" element={<TemplatesPage />} />
             <Route path="templates/new" element={<TemplateEditPage />} />

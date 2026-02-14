@@ -621,3 +621,15 @@ section.card h2 {
 .chart .bar:hover {
   fill: #1f6feb;
 }
+
+table.heat td,
+table.heat th {
+  text-align: center;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+table.heat td:first-child,
+table.heat th:first-child {
+  text-align: left;
+}
