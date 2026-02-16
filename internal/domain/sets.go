@@ -31,7 +31,7 @@ func ValidateSet(s SetInput) map[string]string {
 	if s.RPE != nil {
 		r := *s.RPE
 		switch {
-		case r < MinRPE:
+		case r < MinRPE || r > MaxRPE || math.IsNaN(r):
 			fields["rpe"] = "RPE must be between 1 and 10."
 		case math.Mod(r*2, 1) != 0:
 			fields["rpe"] = "RPE goes in half steps, e.g. 7.5."

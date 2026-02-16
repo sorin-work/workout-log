@@ -29,6 +29,8 @@ func TestValidateSetRejectsBadValues(t *testing.T) {
 		"negative weight":     {SetInput{Reps: 5, WeightKg: -2.5}, "weightKg"},
 		"absurd weight":       {SetInput{Reps: 5, WeightKg: 1200}, "weightKg"},
 		"rpe zero":            {SetInput{Reps: 5, RPE: ptr(0)}, "rpe"},
+		"rpe above ten":       {SetInput{Reps: 5, RPE: ptr(11)}, "rpe"},
+		"rpe percent typo":    {SetInput{Reps: 5, RPE: ptr(85)}, "rpe"},
 		"rpe quarter step":    {SetInput{Reps: 5, RPE: ptr(7.25)}, "rpe"},
 		"completed with zero": {SetInput{Reps: 0, Completed: true}, "reps"},
 	}

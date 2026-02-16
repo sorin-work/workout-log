@@ -216,3 +216,15 @@ func TestWorkoutHistoryPages(t *testing.T) {
 	c.mustDo(http.MethodGet, "/api/workouts?page=0", nil, http.StatusBadRequest, nil)
 	c.mustDo(http.MethodGet, "/api/workouts?pageSize=500", nil, http.StatusBadRequest, nil)
 }
+
+func TestRPEAboveTenIsRejected(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("w@example.com")
+	w := createWorkout(t, c, "Day A", time.Now())
+	res := c.do(http.MethodPost, fmt.Sprintf("/api/workouts/%d/sets", w.ID), map[string]any{
+		"exerciseId": exerciseID(t, c, "Deadlift"), "reps": 3, "weightKg": 180, "rpe": 95, "completed": true,
+	})
+	if res.Status != http.StatusUnprocessableEntity || errorFields(t, res)["rpe"] == "" {
+		t.Fatalf("status %d: %s", res.Status, res.Body)
+	}
+}
