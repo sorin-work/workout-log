@@ -633,3 +633,13 @@ table.heat td:first-child,
 table.heat th:first-child {
   text-align: left;
 }
+
+.plate-calc {
+  max-width: 360px;
+  margin-bottom: 1rem;
+}
+
+.plate-calc h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}

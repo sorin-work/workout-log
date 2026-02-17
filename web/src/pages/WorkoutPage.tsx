@@ -3,11 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { del, errorMessage, post, put } from '../api/client';
 import type { Exercise, FinishResult, ProgressionChange, Workout, WorkoutSet } from '../api/types';
 import { ExercisePicker } from '../components/ExercisePicker';
+import { PlateCalculator } from '../components/PlateCalculator';
 import { ProgressionSummary } from '../components/ProgressionSummary';
 import { SetRow, type SetChanges } from '../components/SetRow';
 import { WorkoutDetailsForm } from '../components/WorkoutDetailsForm';
 import { formatDate, formatDuration, formatTime } from '../lib/format';
 import { groupSets } from '../lib/groupSets';
+import { fromKg } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
 
@@ -18,6 +20,7 @@ export default function WorkoutPage() {
   const unit = useUnit();
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [plates, setPlates] = useState<number | null>(null);
   const [progression, setProgression] = useState<ProgressionChange[] | null>(null);
   const [actionError, setActionError] = useState('');
 
@@ -165,13 +168,24 @@ export default function WorkoutPage() {
                 ))}
               </tbody>
             </table>
-            <button className="btn small" onClick={() => addSet(g.exerciseId, g.sets.at(-1))}>
-              Add set
-            </button>
+            <div className="actions">
+              <button className="btn small" onClick={() => addSet(g.exerciseId, g.sets.at(-1))}>
+                Add set
+              </button>
+              <button
+                className="btn small"
+                onClick={() => setPlates(fromKg(g.sets.at(-1)?.weightKg ?? 0, unit))}
+              >
+                Plates
+              </button>
+            </div>
           </section>
         );
       })}
 
+      {plates !== null && (
+        <PlateCalculator initial={plates} unit={unit} onClose={() => setPlates(null)} />
+      )}
       {picking ? (
         <ExercisePicker onPick={pick} onCancel={() => setPicking(false)} />
       ) : (
