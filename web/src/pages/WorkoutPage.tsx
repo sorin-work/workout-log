@@ -4,6 +4,7 @@ import { del, errorMessage, post, put } from '../api/client';
 import type { Exercise, FinishResult, ProgressionChange, Workout, WorkoutSet } from '../api/types';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { PlateCalculator } from '../components/PlateCalculator';
+import { RestTimer } from '../components/RestTimer';
 import { ProgressionSummary } from '../components/ProgressionSummary';
 import { SetRow, type SetChanges } from '../components/SetRow';
 import { WorkoutDetailsForm } from '../components/WorkoutDetailsForm';
@@ -20,6 +21,7 @@ export default function WorkoutPage() {
   const unit = useUnit();
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [restStart, setRestStart] = useState<number | null>(null);
   const [plates, setPlates] = useState<number | null>(null);
   const [progression, setProgression] = useState<ProgressionChange[] | null>(null);
   const [actionError, setActionError] = useState('');
@@ -55,6 +57,7 @@ export default function WorkoutPage() {
 
   const updateSet = (set: WorkoutSet, changes: SetChanges) =>
     run(async () => {
+      if (changes.completed && !set.completed && !changes.warmup) setRestStart(Date.now());
       replaceSet(
         await put<WorkoutSet>(`/workouts/${w.id}/sets/${set.id}`, {
           exerciseId: set.exerciseId,
@@ -183,6 +186,14 @@ export default function WorkoutPage() {
         );
       })}
 
+      {restStart !== null && !w.finishedAt && (
+        <RestTimer
+          key={restStart}
+          startedAt={restStart}
+          seconds={120}
+          onDismiss={() => setRestStart(null)}
+        />
+      )}
       {plates !== null && (
         <PlateCalculator initial={plates} unit={unit} onClose={() => setPlates(null)} />
       )}
