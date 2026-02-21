@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { del, errorMessage, post, put } from '../api/client';
-import type { Exercise, FinishResult, ProgressionChange, Workout, WorkoutSet } from '../api/types';
+import type {
+  Exercise,
+  FinishResult,
+  ProgressionChange,
+  Template,
+  Workout,
+  WorkoutSet,
+} from '../api/types';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { PlateCalculator } from '../components/PlateCalculator';
 import { RestTimer } from '../components/RestTimer';
@@ -14,6 +21,8 @@ import { fromKg } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
 
+const DEFAULT_REST = 120;
+
 export default function WorkoutPage() {
   const { id } = useParams();
   const { data: workout, error, loading, setData } = useFetch<Workout>(`/workouts/${id}`);
@@ -22,6 +31,10 @@ export default function WorkoutPage() {
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [restStart, setRestStart] = useState<number | null>(null);
+  const [restSeconds, setRestSeconds] = useState(DEFAULT_REST);
+  const template = useFetch<Template>(
+    workout?.templateId ? `/templates/${workout.templateId}` : null,
+  );
   const [plates, setPlates] = useState<number | null>(null);
   const [progression, setProgression] = useState<ProgressionChange[] | null>(null);
   const [actionError, setActionError] = useState('');
@@ -57,7 +70,11 @@ export default function WorkoutPage() {
 
   const updateSet = (set: WorkoutSet, changes: SetChanges) =>
     run(async () => {
-      if (changes.completed && !set.completed && !changes.warmup) setRestStart(Date.now());
+      if (changes.completed && !set.completed && !changes.warmup) {
+        const planned = template.data?.exercises.find((e) => e.exerciseId === set.exerciseId);
+        setRestSeconds(planned?.restSeconds ?? DEFAULT_REST);
+        setRestStart(Date.now());
+      }
       replaceSet(
         await put<WorkoutSet>(`/workouts/${w.id}/sets/${set.id}`, {
           exerciseId: set.exerciseId,
@@ -190,7 +207,7 @@ export default function WorkoutPage() {
         <RestTimer
           key={restStart}
           startedAt={restStart}
-          seconds={120}
+          seconds={restSeconds}
           onDismiss={() => setRestStart(null)}
         />
       )}
