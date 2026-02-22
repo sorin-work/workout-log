@@ -10,6 +10,7 @@ import type {
   WorkoutSet,
 } from '../api/types';
 import { ExercisePicker } from '../components/ExercisePicker';
+import { LastTime } from '../components/LastTime';
 import { PlateCalculator } from '../components/PlateCalculator';
 import { RestTimer } from '../components/RestTimer';
 import { ProgressionSummary } from '../components/ProgressionSummary';
@@ -163,7 +164,10 @@ export default function WorkoutPage() {
         let working = 0;
         return (
           <section key={g.exerciseId} className="card exercise-block">
-            <h2>{g.exerciseName}</h2>
+            <h2>
+              <Link to={`/exercises/${g.exerciseId}`}>{g.exerciseName}</Link>
+            </h2>
+            <LastTime exerciseId={g.exerciseId} workoutId={w.id} unit={unit} />
             <table className="sets">
               <thead>
                 <tr>

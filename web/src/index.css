@@ -667,3 +667,12 @@ table.heat th:first-child {
 .rest-timer.done {
   background: #1a7f37;
 }
+
+.exercise-block h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.last-time {
+  margin: -0.25rem 0 0.5rem;
+}

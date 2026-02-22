@@ -173,3 +173,9 @@ export interface WeekVolume {
   muscles: Record<string, MuscleVolume>;
   totalSets: number;
 }
+
+export interface LastSession {
+  workoutId: number;
+  performedAt: string;
+  sets: WorkoutSet[];
+}
