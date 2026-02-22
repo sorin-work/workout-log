@@ -59,6 +59,7 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Post("/exercises/{id}/restore", s.handleArchiveExercise(false))
 			r.Get("/exercises/{id}/records", s.handleExerciseRecords)
 			r.Get("/exercises/{id}/progress", s.handleExerciseProgress)
+			r.Get("/exercises/{id}/last", s.handleLastSession)
 			r.Get("/records", s.handleListRecords)
 			r.Get("/stats/volume", s.handleWeeklyVolume)
 

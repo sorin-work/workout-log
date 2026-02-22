@@ -80,3 +80,34 @@ func TestExerciseProgressEndpoint(t *testing.T) {
 		t.Fatalf("volume = %v", pts[2].VolumeKg)
 	}
 }
+
+func TestLastSession(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("r@example.com")
+	ohp := exerciseID(t, c, "Overhead Press")
+	path := fmt.Sprintf("/api/exercises/%d/last", ohp)
+	c.mustDo(http.MethodGet, path, nil, http.StatusNotFound, nil)
+
+	old := createWorkout(t, c, "B", time.Now().Add(-96*time.Hour))
+	addSet(t, c, old.ID, ohp, 5, 40, true)
+	prev := createWorkout(t, c, "B", time.Now().Add(-48*time.Hour))
+	addSet(t, c, prev.ID, ohp, 5, 42.5, true)
+	addSet(t, c, prev.ID, ohp, 4, 42.5, true)
+	addSet(t, c, prev.ID, ohp, 5, 42.5, false)
+	current := createWorkout(t, c, "B", time.Now())
+	addSet(t, c, current.ID, ohp, 5, 45, true)
+
+	var last struct {
+		WorkoutID int64 `json:"workoutId"`
+		Sets      []struct {
+			Reps     int     `json:"reps"`
+			WeightKg float64 `json:"weightKg"`
+		} `json:"sets"`
+	}
+	c.mustDo(http.MethodGet, fmt.Sprintf("%s?excludeWorkout=%d", path, current.ID), nil, http.StatusOK, &last)
+	if last.WorkoutID != prev.ID || len(last.Sets) != 2 || last.Sets[1].Reps != 4 {
+		t.Fatalf("last session: %+v", last)
+	}
+	other := a.signup("other@example.com")
+	other.mustDo(http.MethodGet, path, nil, http.StatusNotFound, nil)
+}

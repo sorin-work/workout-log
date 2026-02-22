@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/sorin-work/workout-log/internal/domain"
 	"github.com/sorin-work/workout-log/internal/store"
@@ -67,4 +68,30 @@ func (s *Server) handleExerciseProgress(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	writeJSON(w, http.StatusOK, domain.ProgressSeries(sets, domain.Epley))
+}
+
+func (s *Server) handleLastSession(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	var exclude int64
+	if v := r.URL.Query().Get("excludeWorkout"); v != "" {
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "bad_request", "excludeWorkout must be a workout id.")
+			return
+		}
+		exclude = n
+	}
+	last, err := s.store.LastSession(r.Context(), currentUser(r.Context()).ID, id, exclude)
+	if errors.Is(err, store.ErrNotFound) {
+		writeNotFound(w, "Previous session")
+		return
+	}
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, last)
 }
