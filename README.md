@@ -19,7 +19,7 @@ Open http://localhost:4413 and log in with the demo account
 
 ## Local development
 
-You need Go 1.25+, Node 22+ and PostgreSQL.
+You need Go 1.26+, Node 22+ and PostgreSQL.
 
 ```bash
 # database
