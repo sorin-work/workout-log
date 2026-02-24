@@ -70,12 +70,42 @@ func (s *Store) ListTemplates(ctx context.Context, userID int64) ([]Template, er
 	if err != nil {
 		return nil, err
 	}
+	if len(list) == 0 {
+		return list, nil
+	}
+	ids := make([]int64, len(list))
+	byID := make(map[int64]*Template, len(list))
 	for i := range list {
-		if list[i].Exercises, err = s.templateExercises(ctx, s.pool, list[i].ID); err != nil {
+		ids[i] = list[i].ID
+		list[i].Exercises = []TemplateExercise{}
+		byID[list[i].ID] = &list[i]
+	}
+	rows, err = s.pool.Query(ctx, `SELECT te.template_id, `+templateExerciseColumns+`
+		FROM template_exercises te JOIN exercises e ON e.id = te.exercise_id
+		WHERE te.template_id = ANY($1) ORDER BY te.template_id, te.position, te.id`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var templateID int64
+		var te TemplateExercise
+		if err := rows.Scan(append([]any{&templateID}, te.scanTargets()...)...); err != nil {
 			return nil, err
 		}
+		t := byID[templateID]
+		t.Exercises = append(t.Exercises, te)
 	}
-	return list, nil
+	return list, rows.Err()
+}
+
+const templateExerciseColumns = `te.id, te.exercise_id, e.name, te.position, te.sets, te.reps,
+	te.weight_kg::float8, te.rest_seconds, te.increment_kg::float8, te.deload_after,
+	te.deload_percent::float8, te.failures`
+
+func (te *TemplateExercise) scanTargets() []any {
+	return []any{&te.ID, &te.ExerciseID, &te.ExerciseName, &te.Position, &te.Sets, &te.Reps,
+		&te.WeightKg, &te.RestSeconds, &te.IncrementKg, &te.DeloadAfter, &te.DeloadPercent, &te.Failures}
 }
 
 // TemplateByID returns one of the user's templates.
@@ -95,9 +125,7 @@ type querier interface {
 }
 
 func (s *Store) templateExercises(ctx context.Context, q querier, templateID int64) ([]TemplateExercise, error) {
-	rows, err := q.Query(ctx, `SELECT te.id, te.exercise_id, e.name, te.position, te.sets, te.reps,
-			te.weight_kg::float8, te.rest_seconds, te.increment_kg::float8, te.deload_after,
-			te.deload_percent::float8, te.failures
+	rows, err := q.Query(ctx, `SELECT `+templateExerciseColumns+`
 		FROM template_exercises te JOIN exercises e ON e.id = te.exercise_id
 		WHERE te.template_id = $1 ORDER BY te.position, te.id`, templateID)
 	if err != nil {
@@ -105,8 +133,7 @@ func (s *Store) templateExercises(ctx context.Context, q querier, templateID int
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (TemplateExercise, error) {
 		var te TemplateExercise
-		err := row.Scan(&te.ID, &te.ExerciseID, &te.ExerciseName, &te.Position, &te.Sets, &te.Reps, &te.WeightKg, &te.RestSeconds,
-			&te.IncrementKg, &te.DeloadAfter, &te.DeloadPercent, &te.Failures)
+		err := row.Scan(te.scanTargets()...)
 		return te, err
 	})
 }
