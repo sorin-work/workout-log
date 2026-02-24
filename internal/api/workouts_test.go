@@ -228,3 +228,26 @@ func TestRPEAboveTenIsRejected(t *testing.T) {
 		t.Fatalf("status %d: %s", res.Status, res.Body)
 	}
 }
+
+func TestWorkoutHistoryCountsAPartialLastPage(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("w@example.com")
+	base := time.Now().Add(-30 * 24 * time.Hour)
+	for i := 0; i < 5; i++ {
+		createWorkout(t, c, fmt.Sprintf("Workout %d", i+1), base.Add(time.Duration(i)*24*time.Hour))
+	}
+	var p1, p3 workoutPage
+	c.mustDo(http.MethodGet, "/api/workouts?pageSize=2", nil, http.StatusOK, &p1)
+	if p1.TotalPages != 3 {
+		t.Fatalf("5 workouts in pages of 2 should be 3 pages, got %d", p1.TotalPages)
+	}
+	c.mustDo(http.MethodGet, "/api/workouts?pageSize=2&page=3", nil, http.StatusOK, &p3)
+	if len(p3.Items) != 1 || p3.Items[0].Name != "Workout 1" {
+		t.Fatalf("last page: %+v", p3.Items)
+	}
+	var empty workoutPage
+	a.signup("new@example.com").mustDo(http.MethodGet, "/api/workouts", nil, http.StatusOK, &empty)
+	if empty.TotalPages != 0 || len(empty.Items) != 0 {
+		t.Fatalf("empty history: %+v", empty)
+	}
+}

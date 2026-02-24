@@ -97,7 +97,7 @@ func (s *Server) handleListWorkouts(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, workoutPage{
 		Items: items, Page: page, PageSize: size, Total: total,
-		TotalPages: total / size,
+		TotalPages: (total + size - 1) / size,
 	})
 }
 
