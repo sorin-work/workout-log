@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // User is an account that owns workouts.
@@ -62,4 +64,16 @@ func (s *Store) UpdateProfile(ctx context.Context, id int64, p Profile) (User, e
 		SET display_name = $2, unit = $3, timezone = $4
 		WHERE id = $1 RETURNING `+userColumns, id, p.DisplayName, p.Unit, p.Timezone))
 	return u, notFound(err)
+}
+
+// UpdatePassword stores a new password hash and ends every session of the
+// user except keepTokenHash.
+func (s *Store) UpdatePassword(ctx context.Context, id int64, hash string, keepTokenHash []byte) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `UPDATE users SET password_hash = $2 WHERE id = $1`, id, hash); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `DELETE FROM sessions WHERE user_id = $1 AND token_hash <> $2`, id, keepTokenHash)
+		return err
+	})
 }

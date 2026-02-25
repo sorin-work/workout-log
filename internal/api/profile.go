@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sorin-work/workout-log/internal/auth"
 	"github.com/sorin-work/workout-log/internal/domain"
 	"github.com/sorin-work/workout-log/internal/store"
 )
@@ -48,4 +49,40 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, u)
+}
+
+type passwordRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
+func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
+	var req passwordRequest
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	u := currentUser(r.Context())
+	if err := auth.CheckPassword(u.PasswordHash, req.CurrentPassword); err != nil {
+		writeValidation(w, map[string]string{"currentPassword": "Current password is incorrect."})
+		return
+	}
+	switch {
+	case len(req.NewPassword) < auth.MinPasswordLength:
+		writeValidation(w, map[string]string{"newPassword": "Password must be at least 8 characters."})
+		return
+	case len(req.NewPassword) > 72:
+		writeValidation(w, map[string]string{"newPassword": "Password must be at most 72 characters."})
+		return
+	}
+	hash, err := auth.HashPassword(req.NewPassword)
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	c, _ := r.Cookie(sessionCookie)
+	if err := s.store.UpdatePassword(r.Context(), u.ID, hash, auth.HashToken(c.Value)); err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

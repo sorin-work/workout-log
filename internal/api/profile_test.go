@@ -47,3 +47,35 @@ func TestUpdateProfileValidation(t *testing.T) {
 		t.Fatalf("fields: %v", f)
 	}
 }
+
+func TestChangePassword(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("p@example.com")
+	other := a.client()
+	other.mustDo(http.MethodPost, "/api/auth/login", map[string]any{
+		"email": "p@example.com", "password": "password123",
+	}, http.StatusOK, nil)
+
+	res := c.do(http.MethodPut, "/api/me/password", map[string]any{
+		"currentPassword": "nope-nope", "newPassword": "new-password-1",
+	})
+	if res.Status != http.StatusUnprocessableEntity || errorFields(t, res)["currentPassword"] == "" {
+		t.Fatalf("wrong current password: %d %s", res.Status, res.Body)
+	}
+	res = c.do(http.MethodPut, "/api/me/password", map[string]any{
+		"currentPassword": "password123", "newPassword": "short",
+	})
+	if errorFields(t, res)["newPassword"] == "" {
+		t.Fatalf("short password: %d %s", res.Status, res.Body)
+	}
+	c.mustDo(http.MethodPut, "/api/me/password", map[string]any{
+		"currentPassword": "password123", "newPassword": "new-password-1",
+	}, http.StatusNoContent, nil)
+
+	// This browser stays logged in, the other one is logged out.
+	c.mustDo(http.MethodGet, "/api/me", nil, http.StatusOK, nil)
+	other.mustDo(http.MethodGet, "/api/me", nil, http.StatusUnauthorized, nil)
+	a.client().mustDo(http.MethodPost, "/api/auth/login", map[string]any{
+		"email": "p@example.com", "password": "new-password-1",
+	}, http.StatusOK, nil)
+}

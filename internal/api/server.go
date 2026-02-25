@@ -50,6 +50,7 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Use(s.requireUser)
 			r.Get("/me", s.handleMe)
 			r.Put("/me", s.handleUpdateProfile)
+			r.Put("/me/password", s.handleChangePassword)
 
 			r.Get("/exercises", s.handleListExercises)
 			r.Post("/exercises", s.handleCreateExercise)
