@@ -676,3 +676,7 @@ table.heat th:first-child {
 .last-time {
   margin: -0.25rem 0 0.5rem;
 }
+
+.narrow + .narrow {
+  margin-top: 1rem;
+}
