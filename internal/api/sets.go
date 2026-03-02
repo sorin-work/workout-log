@@ -82,7 +82,8 @@ func (s *Server) handleAddSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpdateSet(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.loadWorkout(w, r); !ok {
+	wo, ok := s.loadWorkout(w, r)
+	if !ok {
 		return
 	}
 	setID, ok := pathID(w, r, "setID")
@@ -97,7 +98,7 @@ func (s *Server) handleUpdateSet(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	set, err := s.store.UpdateSet(r.Context(), setID, data)
+	set, err := s.store.UpdateSet(r.Context(), wo.ID, setID, data)
 	if errors.Is(err, store.ErrNotFound) {
 		writeNotFound(w, "Set")
 		return
@@ -110,14 +111,15 @@ func (s *Server) handleUpdateSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDeleteSet(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.loadWorkout(w, r); !ok {
+	wo, ok := s.loadWorkout(w, r)
+	if !ok {
 		return
 	}
 	setID, ok := pathID(w, r, "setID")
 	if !ok {
 		return
 	}
-	err := s.store.DeleteSet(r.Context(), setID)
+	err := s.store.DeleteSet(r.Context(), wo.ID, setID)
 	if errors.Is(err, store.ErrNotFound) {
 		writeNotFound(w, "Set")
 		return

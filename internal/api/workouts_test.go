@@ -251,3 +251,26 @@ func TestWorkoutHistoryCountsAPartialLastPage(t *testing.T) {
 		t.Fatalf("empty history: %+v", empty)
 	}
 }
+
+func TestCannotChangeSetsOfAnotherUsersWorkout(t *testing.T) {
+	a := newTestAPI(t)
+	alice := a.signup("alice@example.com")
+	bob := a.signup("bob@example.com")
+	dl := exerciseID(t, alice, "Deadlift")
+	aliceWorkout := createWorkout(t, alice, "Pull", time.Now())
+	aliceSet := addSet(t, alice, aliceWorkout.ID, dl, 5, 180, true)
+
+	// Bob uses his own workout id in the URL with Alice's set id.
+	bobWorkout := createWorkout(t, bob, "Mine", time.Now())
+	path := fmt.Sprintf("/api/workouts/%d/sets/%d", bobWorkout.ID, aliceSet.ID)
+	bob.mustDo(http.MethodPut, path, map[string]any{
+		"exerciseId": dl, "reps": 1, "weightKg": 20, "completed": true,
+	}, http.StatusNotFound, nil)
+	bob.mustDo(http.MethodDelete, path, nil, http.StatusNotFound, nil)
+
+	var got store.Workout
+	alice.mustDo(http.MethodGet, fmt.Sprintf("/api/workouts/%d", aliceWorkout.ID), nil, http.StatusOK, &got)
+	if len(got.Sets) != 1 || got.Sets[0].WeightKg != 180 {
+		t.Fatalf("alice's set was changed: %+v", got.Sets)
+	}
+}

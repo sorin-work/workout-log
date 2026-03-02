@@ -28,12 +28,13 @@ func (s *Store) AddSet(ctx context.Context, workoutID int64, d SetData) (Set, er
 	return s.setByID(ctx, id)
 }
 
-// UpdateSet changes a logged set.
-func (s *Store) UpdateSet(ctx context.Context, setID int64, d SetData) (Set, error) {
+// UpdateSet changes a set of the given workout. Callers must have checked
+// that the workout belongs to the user.
+func (s *Store) UpdateSet(ctx context.Context, workoutID, setID int64, d SetData) (Set, error) {
 	tag, err := s.pool.Exec(ctx, `UPDATE workout_sets
-		SET exercise_id = $2, reps = $3, weight_kg = $4, rpe = $5, completed = $6, warmup = $7
-		WHERE id = $1`,
-		setID, d.ExerciseID, d.Reps, d.WeightKg, d.RPE, d.Completed, d.Warmup)
+		SET exercise_id = $3, reps = $4, weight_kg = $5, rpe = $6, completed = $7, warmup = $8
+		WHERE id = $1 AND workout_id = $2`,
+		setID, workoutID, d.ExerciseID, d.Reps, d.WeightKg, d.RPE, d.Completed, d.Warmup)
 	if err != nil {
 		return Set{}, err
 	}
@@ -43,9 +44,9 @@ func (s *Store) UpdateSet(ctx context.Context, setID int64, d SetData) (Set, err
 	return s.setByID(ctx, setID)
 }
 
-// DeleteSet removes a logged set.
-func (s *Store) DeleteSet(ctx context.Context, setID int64) error {
-	tag, err := s.pool.Exec(ctx, `DELETE FROM workout_sets WHERE id = $1`, setID)
+// DeleteSet removes a set from the given workout.
+func (s *Store) DeleteSet(ctx context.Context, workoutID, setID int64) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM workout_sets WHERE id = $1 AND workout_id = $2`, setID, workoutID)
 	if err != nil {
 		return err
 	}
