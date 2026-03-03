@@ -20,6 +20,9 @@ type Options struct {
 	WebDir string
 }
 
+// loginAttemptsPerMinute limits sign-up and login requests per client IP.
+const loginAttemptsPerMinute = 10
+
 // Server holds the dependencies shared by the HTTP handlers.
 type Server struct {
 	store  *store.Store
@@ -42,8 +45,11 @@ func NewServer(st *store.Store, opts Options) *Server {
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/health", s.handleHealth)
 
-		r.Post("/auth/signup", s.handleSignup)
-		r.Post("/auth/login", s.handleLogin)
+		r.Group(func(r chi.Router) {
+			r.Use(newRateLimiter(loginAttemptsPerMinute, time.Minute).middleware)
+			r.Post("/auth/signup", s.handleSignup)
+			r.Post("/auth/login", s.handleLogin)
+		})
 		r.Post("/auth/logout", s.handleLogout)
 
 		r.Group(func(r chi.Router) {
