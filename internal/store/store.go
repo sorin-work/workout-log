@@ -2,6 +2,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"strconv"
 
@@ -41,3 +42,8 @@ func isUniqueViolation(err error) bool {
 }
 
 func itoa(n int) string { return strconv.Itoa(n) }
+
+// Ping checks that the database answers.
+func (s *Store) Ping(ctx context.Context) error {
+	return s.pool.Ping(ctx)
+}

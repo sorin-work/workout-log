@@ -2,18 +2,22 @@ package api
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
 func TestHealth(t *testing.T) {
-	srv := NewServer(nil, Options{})
-	rec := httptest.NewRecorder()
-	srv.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/health", nil))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", rec.Code)
+	a := newTestAPI(t)
+	var body map[string]string
+	a.client().mustDo(http.MethodGet, "/api/health", nil, http.StatusOK, &body)
+	if body["status"] != "ok" || body["database"] != "ok" {
+		t.Fatalf("body = %v", body)
 	}
-	if got := rec.Body.String(); got != "{\"status\":\"ok\"}\n" {
-		t.Fatalf("body = %q", got)
+}
+
+func TestUnknownAPIRoute(t *testing.T) {
+	a := newTestAPI(t)
+	res := a.client().do(http.MethodGet, "/api/does-not-exist", nil)
+	if res.Status != http.StatusNotFound {
+		t.Fatalf("status %d", res.Status)
 	}
 }

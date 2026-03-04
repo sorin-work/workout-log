@@ -2,6 +2,8 @@
 package api
 
 import (
+	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -112,5 +114,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+	if err := s.store.Ping(ctx); err != nil {
+		slog.Warn("health check failed", "err", err)
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "unavailable", "database": "down"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "database": "ok"})
 }
