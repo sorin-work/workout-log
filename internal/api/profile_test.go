@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/sorin-work/workout-log/internal/store"
 )
@@ -78,4 +79,22 @@ func TestChangePassword(t *testing.T) {
 	a.client().mustDo(http.MethodPost, "/api/auth/login", map[string]any{
 		"email": "p@example.com", "password": "new-password-1",
 	}, http.StatusOK, nil)
+}
+
+func TestDeleteAccount(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("gone@example.com")
+	ex := createExercise(t, c, "Belt Squat", "quads")
+	w := createWorkout(t, c, "Legs", time.Now())
+	addSet(t, c, w.ID, ex.ID, 10, 80, true)
+	createTemplate(t, c, templateBody("Legs", row(ex.ID, 3, 10, 80)))
+
+	res := c.do(http.MethodDelete, "/api/me", map[string]any{"password": "wrong-password"})
+	if res.Status != http.StatusUnprocessableEntity {
+		t.Fatalf("wrong password: %d", res.Status)
+	}
+	c.mustDo(http.MethodDelete, "/api/me", map[string]any{"password": "password123"}, http.StatusNoContent, nil)
+	c.mustDo(http.MethodGet, "/api/me", nil, http.StatusUnauthorized, nil)
+	// The email can be used again.
+	a.signup("gone@example.com")
 }

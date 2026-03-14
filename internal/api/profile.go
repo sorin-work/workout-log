@@ -86,3 +86,26 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *Server) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Password string `json:"password"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	u := currentUser(r.Context())
+	if err := auth.CheckPassword(u.PasswordHash, req.Password); err != nil {
+		writeValidation(w, map[string]string{"password": "Password is incorrect."})
+		return
+	}
+	if err := s.store.DeleteUser(r.Context(), u.ID); err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name: sessionCookie, Value: "", Path: "/", MaxAge: -1,
+		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: s.opts.SecureCookies,
+	})
+	w.WriteHeader(http.StatusNoContent)
+}

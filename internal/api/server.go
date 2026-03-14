@@ -59,6 +59,7 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Get("/me", s.handleMe)
 			r.Put("/me", s.handleUpdateProfile)
 			r.Put("/me/password", s.handleChangePassword)
+			r.Delete("/me", s.handleDeleteAccount)
 
 			r.Get("/exercises", s.handleListExercises)
 			r.Post("/exercises", s.handleCreateExercise)

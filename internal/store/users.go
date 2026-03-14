@@ -77,3 +77,27 @@ func (s *Store) UpdatePassword(ctx context.Context, id int64, hash string, keepT
 		return err
 	})
 }
+
+// DeleteUser removes a user and everything they logged. Workouts and
+// templates go first because their rows reference the user's custom
+// exercises, which are removed with the user.
+func (s *Store) DeleteUser(ctx context.Context, id int64) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		for _, q := range []string{
+			`DELETE FROM workouts WHERE user_id = $1`,
+			`DELETE FROM templates WHERE user_id = $1`,
+		} {
+			if _, err := tx.Exec(ctx, q, id); err != nil {
+				return err
+			}
+		}
+		tag, err := tx.Exec(ctx, `DELETE FROM users WHERE id = $1`, id)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrNotFound
+		}
+		return nil
+	})
+}
