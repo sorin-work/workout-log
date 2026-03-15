@@ -51,6 +51,12 @@ func writeInternal(w http.ResponseWriter, r *http.Request, err error) {
 	writeError(w, http.StatusInternalServerError, "internal", "Something went wrong.")
 }
 
+// writeInternalLogOnly logs an error that happened after the response
+// started streaming.
+func writeInternalLogOnly(r *http.Request, err error) {
+	slog.Error("request failed mid-stream", "method", r.Method, "path", r.URL.Path, "err", err)
+}
+
 func writeNotFound(w http.ResponseWriter, what string) {
 	writeError(w, http.StatusNotFound, "not_found", what+" not found.")
 }
