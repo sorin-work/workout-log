@@ -680,3 +680,13 @@ table.heat th:first-child {
 .narrow + .narrow {
   margin-top: 1rem;
 }
+
+.danger-zone {
+  border-color: #ff8182;
+  margin-top: 1rem;
+}
+
+.danger-zone h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}

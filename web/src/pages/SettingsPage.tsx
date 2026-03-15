@@ -3,6 +3,7 @@ import { ApiError, errorMessage, put } from '../api/client';
 import type { User } from '../api/types';
 import { useAuth } from '../auth/context';
 import { FieldError } from '../components/FieldError';
+import { DeleteAccount } from '../components/DeleteAccount';
 import { PasswordForm } from '../components/PasswordForm';
 
 function timeZones(): string[] {
@@ -78,6 +79,7 @@ export default function SettingsPage() {
         </div>
       </form>
       <PasswordForm />
+      <DeleteAccount />
     </>
   );
 }
