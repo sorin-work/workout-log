@@ -78,6 +78,13 @@ export default function SettingsPage() {
           <button className="btn primary">Save</button>
         </div>
       </form>
+      <div className="card narrow export">
+        <h2>Your data</h2>
+        <p className="muted">Download every set you have logged as a CSV file (weights in kg).</p>
+        <a className="btn" href="/api/export/sets.csv" download>
+          Export CSV
+        </a>
+      </div>
       <PasswordForm />
       <DeleteAccount />
     </>

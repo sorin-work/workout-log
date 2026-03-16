@@ -690,3 +690,12 @@ table.heat th:first-child {
   font-size: 1.05rem;
   margin: 0 0 0.5rem;
 }
+
+.export {
+  margin-top: 1rem;
+}
+
+.export h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
