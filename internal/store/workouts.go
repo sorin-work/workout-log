@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // Workout is a training session with its logged sets.
@@ -168,4 +170,28 @@ func (s *Store) FinishWorkout(ctx context.Context, userID, id int64, at time.Tim
 		return Workout{}, ErrNotFound
 	}
 	return s.WorkoutByID(ctx, userID, id)
+}
+
+// RepeatWorkout starts a new workout with the same exercises, reps and
+// weights as an earlier one. Nothing is ticked off yet.
+func (s *Store) RepeatWorkout(ctx context.Context, userID, id int64, at time.Time) (Workout, error) {
+	src, err := s.WorkoutByID(ctx, userID, id)
+	if err != nil {
+		return Workout{}, err
+	}
+	var newID int64
+	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx, `INSERT INTO workouts (user_id, name, started_at, template_id)
+			VALUES ($1, $2, $3, $4) RETURNING id`, userID, src.Name, at, src.TemplateID).Scan(&newID); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO workout_sets (workout_id, exercise_id, position, reps, weight_kg, warmup)
+			SELECT $2, exercise_id, position, reps, weight_kg, warmup
+			FROM workout_sets WHERE workout_id = $1`, id, newID)
+		return err
+	})
+	if err != nil {
+		return Workout{}, err
+	}
+	return s.WorkoutByID(ctx, userID, newID)
 }

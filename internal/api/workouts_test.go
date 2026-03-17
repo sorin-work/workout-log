@@ -274,3 +274,23 @@ func TestCannotChangeSetsOfAnotherUsersWorkout(t *testing.T) {
 		t.Fatalf("alice's set was changed: %+v", got.Sets)
 	}
 }
+
+func TestRepeatWorkout(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("w@example.com")
+	squat := exerciseID(t, c, "Back Squat")
+	src := createWorkout(t, c, "Legs", time.Now().Add(-48*time.Hour))
+	addSet(t, c, src.ID, squat, 5, 60, true)
+	addSet(t, c, src.ID, squat, 5, 100, true)
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/finish", src.ID), nil, http.StatusOK, nil)
+
+	var w store.Workout
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/repeat", src.ID), nil, http.StatusCreated, &w)
+	if w.ID == src.ID || w.Name != "Legs" || w.FinishedAt != nil || len(w.Sets) != 2 {
+		t.Fatalf("repeated workout: %+v", w)
+	}
+	if s := w.Sets[1]; s.WeightKg != 100 || s.Reps != 5 || s.Completed {
+		t.Fatalf("set: %+v", s)
+	}
+	a.signup("x@example.com").mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/repeat", src.ID), nil, http.StatusNotFound, nil)
+}

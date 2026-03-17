@@ -210,3 +210,20 @@ type finishResponse struct {
 	Workout     store.Workout             `json:"workout"`
 	Progression []store.ProgressionChange `json:"progression"`
 }
+
+func (s *Server) handleRepeatWorkout(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	wo, err := s.store.RepeatWorkout(r.Context(), currentUser(r.Context()).ID, id, s.now())
+	if errors.Is(err, store.ErrNotFound) {
+		writeNotFound(w, "Workout")
+		return
+	}
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, wo)
+}
