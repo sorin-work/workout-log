@@ -99,6 +99,12 @@ export default function WorkoutPage() {
       setProgression(res.progression);
     });
 
+  const repeat = () =>
+    run(async () => {
+      const copy = await post<Workout>(`/workouts/${w.id}/repeat`);
+      navigate(`/workouts/${copy.id}`);
+    });
+
   const remove = () =>
     run(async () => {
       if (!window.confirm('Delete this workout and all of its sets?')) return;
@@ -126,7 +132,11 @@ export default function WorkoutPage() {
           <button className="btn" onClick={() => setEditing(true)}>
             Edit
           </button>
-          {!w.finishedAt && (
+          {w.finishedAt ? (
+            <button className="btn" onClick={repeat}>
+              Do again
+            </button>
+          ) : (
             <button className="btn primary" onClick={finish}>
               Finish workout
             </button>
