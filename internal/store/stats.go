@@ -29,3 +29,22 @@ func (s *Store) ExerciseWeeks(ctx context.Context, userID int64, from time.Time)
 		return r, err
 	})
 }
+
+// WorkoutDays returns every workout of the user since from with its
+// completed working sets and volume.
+func (s *Store) WorkoutDays(ctx context.Context, userID int64, from time.Time) ([]domain.WorkoutDay, error) {
+	rows, err := s.pool.Query(ctx, `SELECT w.started_at,
+			count(ws.id) FILTER (WHERE ws.completed AND NOT ws.warmup),
+			coalesce(sum(ws.reps * ws.weight_kg) FILTER (WHERE ws.completed AND NOT ws.warmup), 0)::float8
+		FROM workouts w LEFT JOIN workout_sets ws ON ws.workout_id = w.id
+		WHERE w.user_id = $1 AND w.started_at >= $2
+		GROUP BY w.id ORDER BY w.started_at`, userID, from)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (domain.WorkoutDay, error) {
+		var d domain.WorkoutDay
+		err := row.Scan(&d.StartedAt, &d.Sets, &d.VolumeKg)
+		return d, err
+	})
+}

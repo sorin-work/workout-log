@@ -61,3 +61,20 @@ func TestWeeklyVolumeParams(t *testing.T) {
 	c.mustDo(http.MethodGet, "/api/stats/volume?weeks=0", nil, http.StatusBadRequest, nil)
 	c.mustDo(http.MethodGet, "/api/stats/volume?weeks=abc", nil, http.StatusBadRequest, nil)
 }
+
+func TestSummaryEndpoint(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("s@example.com")
+	var empty domain.Summary
+	c.mustDo(http.MethodGet, "/api/stats/summary", nil, http.StatusOK, &empty)
+	if empty.TotalWorkouts != 0 || empty.WeekStreak != 0 {
+		t.Fatalf("empty summary: %+v", empty)
+	}
+	w := createWorkout(t, c, "A", time.Now().Add(-7*24*time.Hour))
+	addSet(t, c, w.ID, exerciseID(t, c, "Deadlift"), 5, 100, true)
+	var s domain.Summary
+	c.mustDo(http.MethodGet, "/api/stats/summary", nil, http.StatusOK, &s)
+	if s.TotalWorkouts != 1 || s.LastWeek.Sets != 1 || s.LastWeek.VolumeKg != 500 || s.WeekStreak != 1 {
+		t.Fatalf("summary: %+v", s)
+	}
+}

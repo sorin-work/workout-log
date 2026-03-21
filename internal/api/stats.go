@@ -43,3 +43,16 @@ func (s *Server) handleWeeklyVolume(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, domain.WeeklyVolume(rows, from, now, loc))
 }
+
+func (s *Server) handleSummary(w http.ResponseWriter, r *http.Request) {
+	u := currentUser(r.Context())
+	loc := userLocation(u.Timezone)
+	// Everything since sign-up, so the total count is right; it is one row
+	// per workout, which stays small.
+	days, err := s.store.WorkoutDays(r.Context(), u.ID, time.Time{})
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, domain.Summarize(days, s.now(), loc))
+}
