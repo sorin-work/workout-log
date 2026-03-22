@@ -179,3 +179,16 @@ export interface LastSession {
   performedAt: string;
   sets: WorkoutSet[];
 }
+
+export interface WeekTotals {
+  workouts: number;
+  sets: number;
+  volumeKg: number;
+}
+
+export interface Summary {
+  thisWeek: WeekTotals;
+  lastWeek: WeekTotals;
+  weekStreak: number;
+  totalWorkouts: number;
+}

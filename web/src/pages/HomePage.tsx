@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { errorMessage, post } from '../api/client';
-import type { Page, Program, Template, Workout, WorkoutSummary } from '../api/types';
+import type { Page, Program, Summary, Template, Workout, WorkoutSummary } from '../api/types';
 import { useAuth } from '../auth/context';
+import { SummaryStats } from '../components/SummaryStats';
 import { formatDate } from '../lib/format';
 import { formatVolume } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
@@ -18,6 +19,7 @@ export default function HomePage() {
   const inProgress = recent.data?.items.find((w) => !w.finishedAt);
 
   const templates = useFetch<Template[]>('/templates');
+  const summary = useFetch<Summary>('/stats/summary');
   const programs = useFetch<Program[]>('/programs');
   const active = programs.data?.find((p) => p.active && p.days.length > 0);
   const nextDay = active?.days[active.nextPosition % active.days.length];
@@ -50,6 +52,9 @@ export default function HomePage() {
     <>
       <h1>Welcome back{user?.displayName ? `, ${user.displayName}` : ''}</h1>
       {error && <p className="alert">{error}</p>}
+      {summary.data && summary.data.totalWorkouts > 0 && (
+        <SummaryStats summary={summary.data} unit={unit} />
+      )}
       {inProgress && (
         <div className="card highlight">
           <strong>{inProgress.name}</strong> is still in progress.{' '}
