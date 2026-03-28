@@ -40,7 +40,7 @@ export async function api<T>(method: Method, path: string, body?: unknown): Prom
 export const get = <T>(path: string) => api<T>('GET', path);
 export const post = <T>(path: string, body?: unknown) => api<T>('POST', path, body ?? {});
 export const put = <T>(path: string, body: unknown) => api<T>('PUT', path, body);
-export const del = (path: string) => api<void>('DELETE', path);
+export const del = (path: string, body?: unknown) => api<void>('DELETE', path, body);
 
 /** Returns a human readable message for any thrown value. */
 export function errorMessage(err: unknown): string {
