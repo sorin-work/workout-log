@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/sorin-work/workout-log/internal/store"
 )
 
 // maxBodyBytes caps request bodies; workouts with many sets stay far below it.
@@ -107,4 +109,14 @@ func pathID(w http.ResponseWriter, r *http.Request, name string) (int64, bool) {
 		return 0, false
 	}
 	return id, true
+}
+
+// writeStoreError turns a store error into a response: 404 for ErrNotFound,
+// 500 for anything else.
+func writeStoreError(w http.ResponseWriter, r *http.Request, err error, what string) {
+	if errors.Is(err, store.ErrNotFound) {
+		writeNotFound(w, what)
+		return
+	}
+	writeInternal(w, r, err)
 }

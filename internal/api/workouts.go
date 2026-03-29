@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -130,12 +129,8 @@ func (s *Server) handleGetWorkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wo, err := s.store.WorkoutByID(r.Context(), currentUser(r.Context()).ID, id)
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Workout")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Workout")
 		return
 	}
 	writeJSON(w, http.StatusOK, wo)
@@ -156,12 +151,8 @@ func (s *Server) handleUpdateWorkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wo, err := s.store.UpdateWorkout(r.Context(), currentUser(r.Context()).ID, id, in)
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Workout")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Workout")
 		return
 	}
 	writeJSON(w, http.StatusOK, wo)
@@ -173,12 +164,8 @@ func (s *Server) handleDeleteWorkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := s.store.DeleteWorkout(r.Context(), currentUser(r.Context()).ID, id)
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Workout")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Workout")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -190,12 +177,8 @@ func (s *Server) handleFinishWorkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wo, err := s.store.FinishWorkout(r.Context(), currentUser(r.Context()).ID, id, s.now())
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Workout")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Workout")
 		return
 	}
 	changes, err := s.store.ApplyProgression(r.Context(), wo)
@@ -217,12 +200,8 @@ func (s *Server) handleRepeatWorkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wo, err := s.store.RepeatWorkout(r.Context(), currentUser(r.Context()).ID, id, s.now())
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Workout")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Workout")
 		return
 	}
 	writeJSON(w, http.StatusCreated, wo)

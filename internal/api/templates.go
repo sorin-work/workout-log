@@ -103,12 +103,8 @@ func (s *Server) handleGetTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	t, err := s.store.TemplateByID(r.Context(), currentUser(r.Context()).ID, id)
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Template")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Template")
 		return
 	}
 	writeJSON(w, http.StatusOK, t)
@@ -145,12 +141,8 @@ func (s *Server) handleUpdateTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	t, err := s.store.UpdateTemplate(r.Context(), currentUser(r.Context()).ID, id, in)
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Template")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Template")
 		return
 	}
 	writeJSON(w, http.StatusOK, t)
@@ -162,12 +154,8 @@ func (s *Server) handleDeleteTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := s.store.DeleteTemplate(r.Context(), currentUser(r.Context()).ID, id)
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Template")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Template")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -179,12 +167,8 @@ func (s *Server) handleStartTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wo, err := s.store.StartWorkoutFromTemplate(r.Context(), currentUser(r.Context()).ID, id, s.now())
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Template")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Template")
 		return
 	}
 	writeJSON(w, http.StatusCreated, wo)

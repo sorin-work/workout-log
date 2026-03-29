@@ -25,12 +25,8 @@ func (s *Server) handleExerciseRecords(w http.ResponseWriter, r *http.Request) {
 	}
 	userID := currentUser(r.Context()).ID
 	ex, err := s.store.ExerciseByID(r.Context(), userID, id)
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Exercise")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Exercise")
 		return
 	}
 	sets, err := s.store.LoggedSets(r.Context(), userID, id)
@@ -85,12 +81,8 @@ func (s *Server) handleLastSession(w http.ResponseWriter, r *http.Request) {
 		exclude = n
 	}
 	last, err := s.store.LastSession(r.Context(), currentUser(r.Context()).ID, id, exclude)
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Previous session")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Previous session")
 		return
 	}
 	writeJSON(w, http.StatusOK, last)

@@ -126,12 +126,8 @@ func (s *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := s.store.DeleteProgram(r.Context(), currentUser(r.Context()).ID, id)
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Program")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Program")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -143,12 +139,8 @@ func (s *Server) handleStartProgram(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wo, err := s.store.StartProgramDay(r.Context(), currentUser(r.Context()).ID, id, s.now())
-	if errors.Is(err, store.ErrNotFound) {
-		writeNotFound(w, "Program")
-		return
-	}
 	if err != nil {
-		writeInternal(w, r, err)
+		writeStoreError(w, r, err, "Program")
 		return
 	}
 	writeJSON(w, http.StatusCreated, wo)
