@@ -16,6 +16,7 @@ import { RestTimer } from '../components/RestTimer';
 import { ProgressionSummary } from '../components/ProgressionSummary';
 import { SetRow, type SetChanges } from '../components/SetRow';
 import { WorkoutDetailsForm } from '../components/WorkoutDetailsForm';
+import { WorkoutNotes } from '../components/WorkoutNotes';
 import { formatDate, formatDuration, formatTime } from '../lib/format';
 import { groupSets } from '../lib/groupSets';
 import { fromKg } from '../lib/units';
@@ -161,12 +162,7 @@ export default function WorkoutPage() {
           }}
         />
       ) : (
-        w.notes && (
-          <div
-            className="card notes"
-            dangerouslySetInnerHTML={{ __html: w.notes.replace(/\n/g, '<br>') }}
-          />
-        )
+        <WorkoutNotes notes={w.notes} />
       )}
 
       {groups.length === 0 && <p className="empty">No exercises yet. Add one to get started.</p>}

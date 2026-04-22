@@ -416,7 +416,7 @@ tr.set.done {
 
 .notes {
   margin-bottom: 1rem;
-  white-space: normal;
+  white-space: pre-line;
 }
 
 .page-footer {
