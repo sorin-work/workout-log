@@ -28,7 +28,7 @@ func TestDemoSeed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page, total, err := st.ListWorkouts(ctx, u.ID, 5, 0)
+	page, total, err := st.ListWorkouts(ctx, u.ID, store.WorkoutFilter{}, 5, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -89,7 +89,16 @@ func (s *Server) handleListWorkouts(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	items, total, err := s.store.ListWorkouts(r.Context(), currentUser(r.Context()).ID, size, (page-1)*size)
+	var f store.WorkoutFilter
+	if v := r.URL.Query().Get("exerciseId"); v != "" {
+		id, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || id <= 0 {
+			writeError(w, http.StatusBadRequest, "bad_request", "exerciseId must be an exercise id.")
+			return
+		}
+		f.ExerciseID = id
+	}
+	items, total, err := s.store.ListWorkouts(r.Context(), currentUser(r.Context()).ID, f, size, (page-1)*size)
 	if err != nil {
 		writeInternal(w, r, err)
 		return

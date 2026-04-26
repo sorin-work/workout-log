@@ -294,3 +294,20 @@ func TestRepeatWorkout(t *testing.T) {
 	}
 	a.signup("x@example.com").mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/repeat", src.ID), nil, http.StatusNotFound, nil)
 }
+
+func TestFilterWorkoutsByExercise(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("w@example.com")
+	squat := exerciseID(t, c, "Back Squat")
+	w1 := createWorkout(t, c, "Legs", time.Now().Add(-48*time.Hour))
+	addSet(t, c, w1.ID, squat, 5, 100, true)
+	w2 := createWorkout(t, c, "Arms", time.Now().Add(-24*time.Hour))
+	addSet(t, c, w2.ID, exerciseID(t, c, "Dumbbell Curl"), 10, 14, true)
+
+	var page workoutPage
+	c.mustDo(http.MethodGet, fmt.Sprintf("/api/workouts?exerciseId=%d", squat), nil, http.StatusOK, &page)
+	if page.Total != 1 || page.Items[0].ID != w1.ID {
+		t.Fatalf("filtered: %+v", page)
+	}
+	c.mustDo(http.MethodGet, "/api/workouts?exerciseId=x", nil, http.StatusBadRequest, nil)
+}

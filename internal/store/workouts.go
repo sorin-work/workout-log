@@ -104,11 +104,19 @@ func scanSet(row interface{ Scan(...any) error }) (Set, error) {
 	return st, err
 }
 
+// WorkoutFilter narrows ListWorkouts.
+type WorkoutFilter struct {
+	// ExerciseID keeps only workouts with at least one set of the exercise.
+	ExerciseID int64
+}
+
 // ListWorkouts returns a page of the user's workouts, newest first, with a
 // summary of what was done in each, and the total number of workouts.
-func (s *Store) ListWorkouts(ctx context.Context, userID int64, limit, offset int) ([]WorkoutSummary, int, error) {
+func (s *Store) ListWorkouts(ctx context.Context, userID int64, f WorkoutFilter, limit, offset int) ([]WorkoutSummary, int, error) {
+	const match = `w.user_id = $1 AND ($2 = 0 OR EXISTS (
+		SELECT 1 FROM workout_sets x WHERE x.workout_id = w.id AND x.exercise_id = $2))`
 	var total int
-	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM workouts WHERE user_id = $1`, userID).Scan(&total); err != nil {
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM workouts w WHERE `+match, userID, f.ExerciseID).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 	rows, err := s.pool.Query(ctx, `SELECT w.id, w.name, w.started_at, w.finished_at,
@@ -116,10 +124,10 @@ func (s *Store) ListWorkouts(ctx context.Context, userID int64, limit, offset in
 			count(ws.id) FILTER (WHERE ws.completed AND NOT ws.warmup),
 			coalesce(sum(ws.reps * ws.weight_kg) FILTER (WHERE ws.completed AND NOT ws.warmup), 0)::float8
 		FROM workouts w LEFT JOIN workout_sets ws ON ws.workout_id = w.id
-		WHERE w.user_id = $1
+		WHERE `+match+`
 		GROUP BY w.id
 		ORDER BY w.started_at DESC, w.id DESC
-		LIMIT $2 OFFSET $3`, userID, limit, offset)
+		LIMIT $3 OFFSET $4`, userID, f.ExerciseID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
