@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from 'react-router';
-import type { Page, WorkoutSummary } from '../api/types';
+import type { Exercise, Page, WorkoutSummary } from '../api/types';
 import { formatDate, formatDuration } from '../lib/format';
 import { formatVolume } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
@@ -9,20 +9,42 @@ export default function WorkoutsPage() {
   const [params, setParams] = useSearchParams();
   const unit = useUnit();
   const page = Math.max(1, Number(params.get('page')) || 1);
-  const { data, error, loading } = useFetch<Page<WorkoutSummary>>(`/workouts?page=${page}`);
+  const exercise = params.get('exercise') ?? '';
+  const query = new URLSearchParams({ page: String(page) });
+  if (exercise) query.set('exerciseId', exercise);
+  const { data, error, loading } = useFetch<Page<WorkoutSummary>>(`/workouts?${query}`);
+  const exercises = useFetch<Exercise[]>('/exercises?archived=true');
 
-  function goTo(p: number) {
-    setParams(p === 1 ? {} : { page: String(p) });
+  function goTo(p: number, ex = exercise) {
+    const next: Record<string, string> = {};
+    if (p > 1) next.page = String(p);
+    if (ex) next.exercise = ex;
+    setParams(next);
   }
 
   return (
     <>
       <div className="page-header">
         <h1>Workouts</h1>
+        <select
+          aria-label="Filter by exercise"
+          value={exercise}
+          onChange={(e) => goTo(1, e.target.value)}
+        >
+          <option value="">All exercises</option>
+          {exercises.data?.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.name}
+            </option>
+          ))}
+        </select>
       </div>
       {error && <p className="alert">{error}</p>}
       {loading && !data && <p className="muted">Loading…</p>}
-      {data && data.total === 0 && (
+      {data && data.total === 0 && exercise && (
+        <p className="empty">No workouts with this exercise yet.</p>
+      )}
+      {data && data.total === 0 && !exercise && (
         <div className="empty">
           <p>No workouts logged yet.</p>
           <Link to="/">Start your first one</Link>

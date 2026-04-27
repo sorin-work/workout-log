@@ -126,9 +126,12 @@ export default function ExercisePage() {
           )}
         </>
       )}
-      <p>
+      <div className="page-footer">
         <Link to="/exercises">Back to exercises</Link>
-      </p>
+        {r && r.setCount > 0 && (
+          <Link to={`/workouts?exercise=${e.id}`}>Workouts with {e.name}</Link>
+        )}
+      </div>
     </>
   );
 }
