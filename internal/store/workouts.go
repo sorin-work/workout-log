@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -27,6 +28,17 @@ type WorkoutSummary struct {
 	ExerciseCount int        `json:"exerciseCount"`
 	SetCount      int        `json:"setCount"`
 	VolumeKg      float64    `json:"volumeKg"`
+	// Exercises lists what was trained, in order, with the heaviest set.
+	Exercises []ExerciseSummary `json:"exercises"`
+}
+
+// ExerciseSummary is one exercise of a workout in the history list.
+type ExerciseSummary struct {
+	ExerciseID int64   `json:"exerciseId"`
+	Name       string  `json:"name"`
+	Sets       int     `json:"sets"`
+	TopReps    int     `json:"topReps"`
+	TopKg      float64 `json:"topKg"`
 }
 
 // Set is one logged set.
@@ -140,7 +152,47 @@ func (s *Store) ListWorkouts(ctx context.Context, userID int64, f WorkoutFilter,
 		}
 		out = append(out, w)
 	}
-	return out, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	for i := range out {
+		if out[i].Exercises, err = s.exerciseSummaries(ctx, out[i].ID); err != nil {
+			return nil, 0, err
+		}
+	}
+	return out, total, nil
+}
+
+// exerciseSummaries returns the exercises of one workout with their
+// completed working sets and the heaviest of them.
+func (s *Store) exerciseSummaries(ctx context.Context, workoutID int64) ([]ExerciseSummary, error) {
+	rows, err := s.pool.Query(ctx, `SELECT DISTINCT ON (ws.exercise_id) ws.exercise_id, e.name,
+			count(*) OVER (PARTITION BY ws.exercise_id), ws.reps, ws.weight_kg::float8,
+			min(ws.position) OVER (PARTITION BY ws.exercise_id) AS first_pos
+		FROM workout_sets ws JOIN exercises e ON e.id = ws.exercise_id
+		WHERE ws.workout_id = $1 AND ws.completed AND NOT ws.warmup
+		ORDER BY ws.exercise_id, ws.weight_kg DESC, ws.reps DESC`, workoutID)
+	if err != nil {
+		return nil, err
+	}
+	type row struct {
+		ExerciseSummary
+		firstPos int
+	}
+	list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (row, error) {
+		var x row
+		err := r.Scan(&x.ExerciseID, &x.Name, &x.Sets, &x.TopReps, &x.TopKg, &x.firstPos)
+		return x, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(list, func(i, j int) bool { return list[i].firstPos < list[j].firstPos })
+	out := make([]ExerciseSummary, len(list))
+	for i, x := range list {
+		out[i] = x.ExerciseSummary
+	}
+	return out, nil
 }
 
 // UpdateWorkout changes the name, notes and times of a workout.

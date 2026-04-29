@@ -102,6 +102,10 @@ func TestLogSetsAndSummary(t *testing.T) {
 	if s.ExerciseCount != 2 || s.SetCount != 2 || s.VolumeKg != 1060 {
 		t.Fatalf("summary: %+v", s)
 	}
+	if len(s.Exercises) != 2 || s.Exercises[0].Name != "Back Squat" || s.Exercises[0].TopKg != 100 ||
+		s.Exercises[0].Sets != 1 || s.Exercises[1].TopReps != 8 {
+		t.Fatalf("exercises: %+v", s.Exercises)
+	}
 }
 
 func TestSetValidation(t *testing.T) {
