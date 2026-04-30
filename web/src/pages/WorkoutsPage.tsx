@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from 'react-router';
 import type { Exercise, Page, WorkoutSummary } from '../api/types';
 import { formatDate, formatDuration } from '../lib/format';
-import { formatVolume } from '../lib/units';
+import { formatVolume, formatWeight } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
 
@@ -64,6 +64,21 @@ export default function WorkoutsPage() {
                     ? ` · ${formatDuration(w.startedAt, w.finishedAt)}`
                     : ' · in progress'}
                 </div>
+                {w.exercises.length > 0 && (
+                  <ul className="exercise-summary small">
+                    {w.exercises.map((e) => (
+                      <li key={e.exerciseId}>
+                        {e.sets}× {e.name}
+                        {e.topKg > 0 && (
+                          <span className="muted">
+                            {' '}
+                            · best {formatWeight(e.topKg, unit)} × {e.topReps}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <div className="muted small right">
                 {w.exerciseCount} exercises · {w.setCount} sets

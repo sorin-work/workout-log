@@ -47,6 +47,15 @@ export interface WorkoutSummary {
   exerciseCount: number;
   setCount: number;
   volumeKg: number;
+  exercises: ExerciseSummary[];
+}
+
+export interface ExerciseSummary {
+  exerciseId: number;
+  name: string;
+  sets: number;
+  topReps: number;
+  topKg: number;
 }
 
 export interface Page<T> {
