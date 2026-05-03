@@ -47,6 +47,17 @@ func TestComputeRecords(t *testing.T) {
 	}
 }
 
+func TestHeavySingleIsNotInflated(t *testing.T) {
+	recs := ComputeRecords([]LoggedSet{
+		logged(1, "Deadlift", 0, 1, 200),
+		logged(1, "Deadlift", 1, 5, 170),
+	}, Epley)
+	// 170x5 estimates 198.3; the 200 single is the real max.
+	if got := recs[0].EstimatedMax; got.Value != 200 || got.Reps != 1 {
+		t.Fatalf("estimated max: %+v", got)
+	}
+}
+
 func TestRecordsPreferTheFirstTimeOnTies(t *testing.T) {
 	recs := ComputeRecords([]LoggedSet{
 		logged(1, "Squat", 3, 5, 100),

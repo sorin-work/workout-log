@@ -22,6 +22,9 @@ func EstimateOneRepMax(weight float64, reps int, f Formula) float64 {
 	if weight <= 0 || reps <= 0 || reps > MaxRepsForEstimate {
 		return 0
 	}
+	if reps == 1 {
+		return math.Round(weight*10) / 10
+	}
 	var est float64
 	switch f {
 	case Brzycki:

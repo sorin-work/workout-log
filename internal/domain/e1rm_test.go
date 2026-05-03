@@ -20,6 +20,14 @@ func TestEstimateOneRepMaxEpley(t *testing.T) {
 	}
 }
 
+func TestASingleIsTheOneRepMax(t *testing.T) {
+	for _, f := range []Formula{Epley, Brzycki} {
+		if got := EstimateOneRepMax(180, 1, f); got != 180 {
+			t.Errorf("%s: a single at 180 estimated %v", f, got)
+		}
+	}
+}
+
 func TestEstimateOneRepMaxBrzycki(t *testing.T) {
 	if got := EstimateOneRepMax(100, 5, Brzycki); got != 112.5 {
 		t.Errorf("Brzycki(100 x 5) = %v, want 112.5", got)
