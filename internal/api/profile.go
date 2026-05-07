@@ -14,6 +14,7 @@ type profileRequest struct {
 	DisplayName string `json:"displayName"`
 	Unit        string `json:"unit"`
 	Timezone    string `json:"timezone"`
+	Formula     string `json:"e1rmFormula"`
 }
 
 func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
@@ -25,6 +26,7 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		DisplayName: strings.TrimSpace(req.DisplayName),
 		Unit:        req.Unit,
 		Timezone:    strings.TrimSpace(req.Timezone),
+		Formula:     req.Formula,
 	}
 	fields := map[string]string{}
 	if len(p.DisplayName) > 60 {
@@ -32,6 +34,13 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, err := domain.ParseUnit(p.Unit); err != nil {
 		fields["unit"] = "Unit must be kg or lb."
+	}
+	switch domain.Formula(p.Formula) {
+	case "":
+		p.Formula = currentUser(r.Context()).Formula
+	case domain.Epley, domain.Brzycki:
+	default:
+		fields["e1rmFormula"] = "Formula must be epley or brzycki."
 	}
 	if p.Timezone == "" {
 		p.Timezone = "UTC"

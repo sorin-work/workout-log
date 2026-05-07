@@ -10,12 +10,13 @@ import (
 )
 
 func (s *Server) handleListRecords(w http.ResponseWriter, r *http.Request) {
-	sets, err := s.store.LoggedSets(r.Context(), currentUser(r.Context()).ID, 0)
+	u := currentUser(r.Context())
+	sets, err := s.store.LoggedSets(r.Context(), u.ID, 0)
 	if err != nil {
 		writeInternal(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, domain.ComputeRecords(sets, domain.Epley))
+	writeJSON(w, http.StatusOK, domain.ComputeRecords(sets, domain.Formula(u.Formula)))
 }
 
 func (s *Server) handleExerciseRecords(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +35,7 @@ func (s *Server) handleExerciseRecords(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, r, err)
 		return
 	}
-	recs := domain.ComputeRecords(sets, domain.Epley)
+	recs := domain.ComputeRecords(sets, domain.Formula(currentUser(r.Context()).Formula))
 	if len(recs) == 0 {
 		writeJSON(w, http.StatusOK, domain.ExerciseRecords{
 			ExerciseID: ex.ID, ExerciseName: ex.Name, RepMaxes: map[int]domain.RecordSet{},
@@ -63,7 +64,7 @@ func (s *Server) handleExerciseProgress(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, domain.ProgressSeries(sets, domain.Epley))
+	writeJSON(w, http.StatusOK, domain.ProgressSeries(sets, domain.Formula(currentUser(r.Context()).Formula)))
 }
 
 func (s *Server) handleLastSession(w http.ResponseWriter, r *http.Request) {

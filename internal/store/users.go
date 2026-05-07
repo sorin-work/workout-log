@@ -14,15 +14,16 @@ type User struct {
 	DisplayName  string    `json:"displayName"`
 	Unit         string    `json:"unit"`
 	Timezone     string    `json:"timezone"`
+	Formula      string    `json:"e1rmFormula"`
 	PasswordHash string    `json:"-"`
 	CreatedAt    time.Time `json:"createdAt"`
 }
 
-const userColumns = `id, email, display_name, unit, timezone, password_hash, created_at`
+const userColumns = `id, email, display_name, unit, timezone, e1rm_formula, password_hash, created_at`
 
 func scanUser(row interface{ Scan(...any) error }) (User, error) {
 	var u User
-	err := row.Scan(&u.ID, &u.Email, &u.DisplayName, &u.Unit, &u.Timezone, &u.PasswordHash, &u.CreatedAt)
+	err := row.Scan(&u.ID, &u.Email, &u.DisplayName, &u.Unit, &u.Timezone, &u.Formula, &u.PasswordHash, &u.CreatedAt)
 	return u, err
 }
 
@@ -56,13 +57,14 @@ type Profile struct {
 	DisplayName string
 	Unit        string
 	Timezone    string
+	Formula     string
 }
 
 // UpdateProfile changes the display name and preferences of a user.
 func (s *Store) UpdateProfile(ctx context.Context, id int64, p Profile) (User, error) {
 	u, err := scanUser(s.pool.QueryRow(ctx, `UPDATE users
-		SET display_name = $2, unit = $3, timezone = $4
-		WHERE id = $1 RETURNING `+userColumns, id, p.DisplayName, p.Unit, p.Timezone))
+		SET display_name = $2, unit = $3, timezone = $4, e1rm_formula = $5
+		WHERE id = $1 RETURNING `+userColumns, id, p.DisplayName, p.Unit, p.Timezone, p.Formula))
 	return u, notFound(err)
 }
 

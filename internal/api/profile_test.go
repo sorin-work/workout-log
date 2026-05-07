@@ -98,3 +98,38 @@ func TestDeleteAccount(t *testing.T) {
 	// The email can be used again.
 	a.signup("gone@example.com")
 }
+
+func TestEstimatedMaxFormulaPreference(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("f@example.com")
+	w := createWorkout(t, c, "A", time.Now().Add(-time.Hour))
+	addSet(t, c, w.ID, exerciseID(t, c, "Bench Press"), 5, 100, true)
+
+	var recs []struct {
+		EstimatedMax struct {
+			Value float64 `json:"value"`
+		} `json:"estimatedMax"`
+	}
+	c.mustDo(http.MethodGet, "/api/records", nil, http.StatusOK, &recs)
+	if recs[0].EstimatedMax.Value != 116.7 {
+		t.Fatalf("epley = %v", recs[0].EstimatedMax.Value)
+	}
+	var me store.User
+	c.mustDo(http.MethodPut, "/api/me", map[string]any{"unit": "kg", "e1rmFormula": "brzycki"}, http.StatusOK, &me)
+	if me.Formula != "brzycki" {
+		t.Fatalf("formula = %q", me.Formula)
+	}
+	c.mustDo(http.MethodGet, "/api/records", nil, http.StatusOK, &recs)
+	if recs[0].EstimatedMax.Value != 112.5 {
+		t.Fatalf("brzycki = %v", recs[0].EstimatedMax.Value)
+	}
+	// Leaving it out keeps the current choice.
+	c.mustDo(http.MethodPut, "/api/me", map[string]any{"unit": "lb"}, http.StatusOK, &me)
+	if me.Formula != "brzycki" {
+		t.Fatalf("formula reset to %q", me.Formula)
+	}
+	res := c.do(http.MethodPut, "/api/me", map[string]any{"unit": "kg", "e1rmFormula": "lombardi"})
+	if errorFields(t, res)["e1rmFormula"] == "" {
+		t.Fatalf("status %d: %s", res.Status, res.Body)
+	}
+}
