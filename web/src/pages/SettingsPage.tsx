@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [unit, setUnit] = useState(user?.unit ?? 'kg');
   const [timezone, setTimezone] = useState(user?.timezone ?? 'UTC');
+  const [e1rmFormula, setFormula] = useState(user?.e1rmFormula ?? 'epley');
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -33,7 +34,7 @@ export default function SettingsPage() {
     setError('');
     setSaved(false);
     try {
-      setUser(await put<User>('/me', { displayName, unit, timezone }));
+      setUser(await put<User>('/me', { displayName, unit, timezone, e1rmFormula }));
       setSaved(true);
     } catch (err) {
       if (err instanceof ApiError && err.code === 'validation_failed') setFields(err.fields);
@@ -73,6 +74,18 @@ export default function SettingsPage() {
           </select>
           <span className="muted small">Used to decide which week a workout belongs to.</span>
           <FieldError message={fields.timezone} />
+        </label>
+        <label>
+          Estimated 1RM formula
+          <select
+            value={e1rmFormula}
+            onChange={(e) => setFormula(e.target.value as 'epley' | 'brzycki')}
+          >
+            <option value="epley">Epley: weight × (1 + reps / 30)</option>
+            <option value="brzycki">Brzycki: weight × 36 / (37 − reps)</option>
+          </select>
+          <span className="muted small">Brzycki is a little more conservative above 5 reps.</span>
+          <FieldError message={fields.e1rmFormula} />
         </label>
         <div className="form-actions">
           <button className="btn primary">Save</button>

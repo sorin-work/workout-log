@@ -4,6 +4,7 @@ export interface User {
   displayName: string;
   unit: 'kg' | 'lb';
   timezone: string;
+  e1rmFormula: 'epley' | 'brzycki';
   createdAt: string;
 }
 
