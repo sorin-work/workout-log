@@ -31,10 +31,10 @@ func (s *Server) validateWorkout(req workoutRequest) (store.WorkoutInput, map[st
 	if in.Name == "" {
 		in.Name = "Workout"
 	}
-	if len(in.Name) > maxWorkoutNameLength {
+	if textLength(in.Name) > maxWorkoutNameLength {
 		fields["name"] = "Name must be at most 80 characters."
 	}
-	if len(in.Notes) > maxWorkoutNotesLength {
+	if textLength(in.Notes) > maxWorkoutNotesLength {
 		fields["notes"] = "Notes must be at most 4000 characters."
 	}
 	now := s.now()

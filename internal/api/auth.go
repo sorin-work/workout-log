@@ -45,7 +45,7 @@ func (s *Server) handleSignup(w http.ResponseWriter, r *http.Request) {
 	} else if len(in.Password) > 72 {
 		fields["password"] = "Password must be at most 72 characters."
 	}
-	if len(in.DisplayName) > 60 {
+	if textLength(in.DisplayName) > 60 {
 		fields["displayName"] = "Name must be at most 60 characters."
 	}
 	if len(fields) > 0 {

@@ -29,7 +29,7 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		Formula:     req.Formula,
 	}
 	fields := map[string]string{}
-	if len(p.DisplayName) > 60 {
+	if textLength(p.DisplayName) > 60 {
 		fields["displayName"] = "Name must be at most 60 characters."
 	}
 	if _, err := domain.ParseUnit(p.Unit); err != nil {

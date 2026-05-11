@@ -150,3 +150,24 @@ func TestBuiltinExercisesAreReadOnly(t *testing.T) {
 	}, http.StatusForbidden, nil)
 	c.mustDo(http.MethodPost, fmt.Sprintf("/api/exercises/%d/archive", bench.ID), nil, http.StatusForbidden, nil)
 }
+
+func TestExerciseNameLimitCountsCharacters(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("ex@example.com")
+	for _, name := range []string{
+		"Kniebeuge mit Sicherheitsstange (hoch)", // 38 characters
+		"Développé couché prise serrée haltères",
+		"ダンベルベンチプレス（インクライン）",
+	} {
+		if n := len([]rune(name)); n > 40 || len(name) <= 40 && name[0] != 'K' {
+			t.Fatalf("bad fixture %q: %d characters, %d bytes", name, n, len(name))
+		}
+		createExercise(t, c, name, "chest")
+	}
+	res := c.do(http.MethodPost, "/api/exercises", map[string]any{
+		"name": strings.Repeat("é", 41), "primaryMuscle": "chest", "equipment": "machine",
+	})
+	if res.Status != http.StatusUnprocessableEntity || errorFields(t, res)["name"] == "" {
+		t.Fatalf("41 characters accepted: %d %s", res.Status, res.Body)
+	}
+}

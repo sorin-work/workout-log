@@ -21,7 +21,7 @@ func (s *Server) validateProgram(w http.ResponseWriter, r *http.Request, req pro
 	switch {
 	case in.Name == "":
 		fields["name"] = "Name is required."
-	case len(in.Name) > 60:
+	case textLength(in.Name) > 60:
 		fields["name"] = "Name must be at most 60 characters."
 	}
 	switch {

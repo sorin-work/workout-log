@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
 
@@ -119,4 +120,10 @@ func writeStoreError(w http.ResponseWriter, r *http.Request, err error, what str
 		return
 	}
 	writeInternal(w, r, err)
+}
+
+// textLength counts characters, not bytes, so limits shown to users as
+// "at most N characters" hold for accented and non-Latin text too.
+func textLength(s string) int {
+	return utf8.RuneCountInString(s)
 }

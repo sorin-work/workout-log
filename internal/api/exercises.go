@@ -70,7 +70,7 @@ func (in exerciseRequest) validate() (store.ExerciseInput, map[string]string) {
 	switch {
 	case out.Name == "":
 		fields["name"] = "Name is required."
-	case len(out.Name) > maxExerciseNameLength:
+	case textLength(out.Name) > maxExerciseNameLength:
 		fields["name"] = "Name must be at most 40 characters."
 	}
 	if !domain.IsMuscleGroup(out.PrimaryMuscle) {

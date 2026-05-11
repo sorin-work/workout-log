@@ -39,7 +39,7 @@ func (s *Server) validateTemplate(w http.ResponseWriter, r *http.Request, req te
 	switch {
 	case in.Name == "":
 		fields["name"] = "Name is required."
-	case len(in.Name) > 60:
+	case textLength(in.Name) > 60:
 		fields["name"] = "Name must be at most 60 characters."
 	}
 	if len(req.Exercises) > maxTemplateExercises {
