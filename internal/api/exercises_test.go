@@ -171,3 +171,31 @@ func TestExerciseNameLimitCountsCharacters(t *testing.T) {
 		t.Fatalf("41 characters accepted: %d %s", res.Status, res.Body)
 	}
 }
+
+func TestExerciseNotes(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("ex@example.com")
+	bench := exerciseID(t, c, "Bench Press")
+	path := fmt.Sprintf("/api/exercises/%d/notes", bench)
+	var n exerciseNotes
+	c.mustDo(http.MethodGet, path, nil, http.StatusOK, &n)
+	if n.Notes != "" {
+		t.Fatalf("notes = %q", n.Notes)
+	}
+	c.mustDo(http.MethodPut, path, map[string]any{"notes": " Feet flat, pinkies on the rings "}, http.StatusOK, nil)
+	c.mustDo(http.MethodGet, path, nil, http.StatusOK, &n)
+	if n.Notes != "Feet flat, pinkies on the rings" {
+		t.Fatalf("notes = %q", n.Notes)
+	}
+	// Notes are personal even for built-in exercises.
+	var other exerciseNotes
+	a.signup("other@example.com").mustDo(http.MethodGet, path, nil, http.StatusOK, &other)
+	if other.Notes != "" {
+		t.Fatalf("other user sees %q", other.Notes)
+	}
+	c.mustDo(http.MethodPut, path, map[string]any{"notes": ""}, http.StatusOK, nil)
+	c.mustDo(http.MethodGet, path, nil, http.StatusOK, &n)
+	if n.Notes != "" {
+		t.Fatalf("notes not cleared: %q", n.Notes)
+	}
+}

@@ -175,3 +175,51 @@ func (s *Server) ownsExercise(w http.ResponseWriter, r *http.Request, id int64) 
 	}
 	return true
 }
+
+type exerciseNotes struct {
+	Notes string `json:"notes"`
+}
+
+func (s *Server) handleGetExerciseNotes(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	userID := currentUser(r.Context()).ID
+	if _, err := s.store.ExerciseByID(r.Context(), userID, id); err != nil {
+		writeStoreError(w, r, err, "Exercise")
+		return
+	}
+	notes, err := s.store.ExerciseNotes(r.Context(), userID, id)
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, exerciseNotes{Notes: notes})
+}
+
+func (s *Server) handlePutExerciseNotes(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	var req exerciseNotes
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	req.Notes = strings.TrimSpace(req.Notes)
+	if textLength(req.Notes) > 1000 {
+		writeValidation(w, map[string]string{"notes": "Notes must be at most 1000 characters."})
+		return
+	}
+	userID := currentUser(r.Context()).ID
+	if _, err := s.store.ExerciseByID(r.Context(), userID, id); err != nil {
+		writeStoreError(w, r, err, "Exercise")
+		return
+	}
+	if err := s.store.SetExerciseNotes(r.Context(), userID, id, req.Notes); err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, req)
+}

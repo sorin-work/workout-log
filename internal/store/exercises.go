@@ -148,3 +148,27 @@ func (s *Store) builtinNameTaken(ctx context.Context, name string) (bool, error)
 		WHERE user_id IS NULL AND lower(name) = lower($1))`, name).Scan(&taken)
 	return taken, err
 }
+
+// ExerciseNotes returns the user's notes for an exercise, or "".
+func (s *Store) ExerciseNotes(ctx context.Context, userID, exerciseID int64) (string, error) {
+	var notes string
+	err := s.pool.QueryRow(ctx, `SELECT notes FROM exercise_notes WHERE user_id = $1 AND exercise_id = $2`,
+		userID, exerciseID).Scan(&notes)
+	if err := notFound(err); err == ErrNotFound {
+		return "", nil
+	}
+	return notes, err
+}
+
+// SetExerciseNotes saves the user's notes for an exercise. Empty notes are
+// removed.
+func (s *Store) SetExerciseNotes(ctx context.Context, userID, exerciseID int64, notes string) error {
+	if notes == "" {
+		_, err := s.pool.Exec(ctx, `DELETE FROM exercise_notes WHERE user_id = $1 AND exercise_id = $2`, userID, exerciseID)
+		return err
+	}
+	_, err := s.pool.Exec(ctx, `INSERT INTO exercise_notes (user_id, exercise_id, notes) VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, exercise_id) DO UPDATE SET notes = excluded.notes, updated_at = now()`,
+		userID, exerciseID, notes)
+	return err
+}

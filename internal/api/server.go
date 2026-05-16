@@ -70,6 +70,8 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Get("/exercises/{id}/records", s.handleExerciseRecords)
 			r.Get("/exercises/{id}/progress", s.handleExerciseProgress)
 			r.Get("/exercises/{id}/last", s.handleLastSession)
+			r.Get("/exercises/{id}/notes", s.handleGetExerciseNotes)
+			r.Put("/exercises/{id}/notes", s.handlePutExerciseNotes)
 			r.Get("/records", s.handleListRecords)
 			r.Get("/stats/volume", s.handleWeeklyVolume)
 			r.Get("/stats/summary", s.handleSummary)
