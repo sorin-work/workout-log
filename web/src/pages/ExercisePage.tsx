@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import type { Exercise, ExerciseRecords, ProgressPoint } from '../api/types';
 import { LineChart } from '../components/charts/LineChart';
+import { ExerciseNotes } from '../components/ExerciseNotes';
 import { formatDate } from '../lib/format';
 import { capitalize } from '../lib/text';
 import { formatWeight, fromKg, trimNumber } from '../lib/units';
@@ -53,6 +54,8 @@ export default function ExercisePage() {
           </div>
         </div>
       </div>
+
+      <ExerciseNotes exerciseId={e.id} />
 
       {r && r.setCount === 0 && <p className="empty">You have not logged this exercise yet.</p>}
 

@@ -800,3 +800,8 @@ table.heat th:first-child {
   margin: 0.3rem 0 0;
   padding: 0;
 }
+
+.notes-text {
+  white-space: pre-line;
+  margin: 0;
+}
