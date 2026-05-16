@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { errorMessage, post } from '../api/client';
 import { MUSCLE_GROUPS, EQUIPMENT, type Exercise } from '../api/types';
 import { ExerciseForm } from '../components/ExerciseForm';
+import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { capitalize } from '../lib/text';
 
@@ -96,7 +97,7 @@ export default function ExercisesPage() {
       </div>
       {actionError && <p className="alert">{actionError}</p>}
       {error && <p className="alert">{error}</p>}
-      {loading && !data && <p className="muted">Loading…</p>}
+      {loading && !data && <Skeleton />}
       {data && data.length === 0 && <p className="empty">No exercises match these filters.</p>}
       {data && data.length > 0 && (
         <ul className="list card">

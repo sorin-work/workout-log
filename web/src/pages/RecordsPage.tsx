@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import type { ExerciseRecords, RecordSet } from '../api/types';
 import { formatDate } from '../lib/format';
 import { formatWeight, type Unit } from '../lib/units';
+import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
 
@@ -30,7 +31,7 @@ export default function RecordsPage() {
         <h1>Personal records</h1>
       </div>
       {error && <p className="alert">{error}</p>}
-      {loading && !data && <p className="muted">Loading…</p>}
+      {loading && !data && <Skeleton />}
       {data && data.length === 0 && (
         <p className="empty">Finish a few sets and your records will show up here.</p>
       )}

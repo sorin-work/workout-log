@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router';
 import type { Exercise, Page, WorkoutSummary } from '../api/types';
 import { formatDate, formatDuration } from '../lib/format';
 import { formatVolume, formatWeight } from '../lib/units';
+import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
 
@@ -40,7 +41,7 @@ export default function WorkoutsPage() {
         </select>
       </div>
       {error && <p className="alert">{error}</p>}
-      {loading && !data && <p className="muted">Loading…</p>}
+      {loading && !data && <Skeleton />}
       {data && data.total === 0 && exercise && (
         <p className="empty">No workouts with this exercise yet.</p>
       )}

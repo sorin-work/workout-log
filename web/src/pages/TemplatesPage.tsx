@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { del, errorMessage, post } from '../api/client';
 import type { Template, Workout } from '../api/types';
 import { formatWeight } from '../lib/units';
+import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
 
@@ -42,7 +43,7 @@ export default function TemplatesPage() {
         </Link>
       </div>
       {(error || actionError) && <p className="alert">{error || actionError}</p>}
-      {loading && !data && <p className="muted">Loading…</p>}
+      {loading && !data && <Skeleton />}
       {data && data.length === 0 && (
         <div className="empty">
           <p>Templates let you start the same workout again with one click.</p>
