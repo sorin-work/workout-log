@@ -45,6 +45,7 @@ func NewServer(st *store.Store, opts Options) *Server {
 	r.Use(middleware.Recoverer)
 
 	r.Route("/api", func(r chi.Router) {
+		r.Use(requestLogger)
 		r.Get("/health", s.handleHealth)
 
 		r.Group(func(r chi.Router) {

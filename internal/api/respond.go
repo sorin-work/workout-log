@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/sorin-work/workout-log/internal/store"
 )
@@ -50,7 +51,8 @@ func writeValidation(w http.ResponseWriter, fields map[string]string) {
 }
 
 func writeInternal(w http.ResponseWriter, r *http.Request, err error) {
-	slog.Error("request failed", "method", r.Method, "path", r.URL.Path, "err", err)
+	slog.Error("request failed", "method", r.Method, "path", r.URL.Path,
+		"request_id", middleware.GetReqID(r.Context()), "err", err)
 	writeError(w, http.StatusInternalServerError, "internal", "Something went wrong.")
 }
 
