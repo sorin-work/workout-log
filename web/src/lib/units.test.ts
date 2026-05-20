@@ -13,6 +13,13 @@ describe('units', () => {
     expect(toKg(0, 'lb')).toBe(0);
   });
 
+  it('keeps pound weights intact through a save', () => {
+    for (const lb of [135, 185, 225, 315, 47.5, 2.5]) {
+      const stored = Math.round(toKg(lb, 'lb') * 1000) / 1000; // numeric(7, 3)
+      expect(trimNumber(fromKg(stored, 'lb'), 2)).toBe(String(lb));
+    }
+  });
+
   it('trims trailing zeros', () => {
     expect(trimNumber(100)).toBe('100');
     expect(trimNumber(102.5)).toBe('102.5');
