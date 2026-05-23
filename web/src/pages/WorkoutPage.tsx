@@ -9,6 +9,7 @@ import type {
   Workout,
   WorkoutSet,
 } from '../api/types';
+import { Elapsed } from '../components/Elapsed';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { LastTime } from '../components/LastTime';
 import { PlateCalculator } from '../components/PlateCalculator';
@@ -126,7 +127,14 @@ export default function WorkoutPage() {
           <h1>{w.name}</h1>
           <div className="muted small">
             {formatDate(w.startedAt)} · {formatTime(w.startedAt)}
-            {w.finishedAt && ` · ${formatDuration(w.startedAt, w.finishedAt)}`}
+            {w.finishedAt ? (
+              ` · ${formatDuration(w.startedAt, w.finishedAt)}`
+            ) : (
+              <>
+                {' · '}
+                <Elapsed since={w.startedAt} /> so far
+              </>
+            )}
           </div>
         </div>
         <div className="actions">
