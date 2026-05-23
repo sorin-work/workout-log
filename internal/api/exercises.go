@@ -16,6 +16,7 @@ func (s *Server) handleListExercises(w http.ResponseWriter, r *http.Request) {
 		Muscle:          q.Get("muscle"),
 		Equipment:       q.Get("equipment"),
 		IncludeArchived: q.Get("archived") == "true",
+		Popular:         q.Get("sort") == "popular",
 	}
 	if f.Muscle != "" && !domain.IsMuscleGroup(f.Muscle) {
 		writeError(w, http.StatusBadRequest, "bad_request", "Unknown muscle group.")

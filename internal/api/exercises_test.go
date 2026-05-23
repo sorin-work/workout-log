@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sorin-work/workout-log/internal/store"
 )
@@ -197,5 +198,23 @@ func TestExerciseNotes(t *testing.T) {
 	c.mustDo(http.MethodGet, path, nil, http.StatusOK, &n)
 	if n.Notes != "" {
 		t.Fatalf("notes not cleared: %q", n.Notes)
+	}
+}
+
+func TestExercisesSortedByUse(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("ex@example.com")
+	w := createWorkout(t, c, "A", time.Now().Add(-time.Hour))
+	curl := exerciseID(t, c, "Hammer Curl")
+	for i := 0; i < 3; i++ {
+		addSet(t, c, w.ID, curl, 10, 14, true)
+	}
+	addSet(t, c, w.ID, exerciseID(t, c, "Plank"), 1, 0, true)
+	list := listExercises(t, c, "?sort=popular")
+	if list[0].Name != "Hammer Curl" || list[1].Name != "Plank" {
+		t.Fatalf("first two: %s, %s", list[0].Name, list[1].Name)
+	}
+	if list[2].Name > list[3].Name {
+		t.Fatalf("the rest should stay alphabetical: %s, %s", list[2].Name, list[3].Name)
 	}
 }

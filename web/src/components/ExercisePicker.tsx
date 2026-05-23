@@ -9,7 +9,9 @@ interface Props {
 
 export function ExercisePicker({ onPick, onCancel }: Props) {
   const [q, setQ] = useState('');
-  const { data, loading } = useFetch<Exercise[]>(`/exercises?q=${encodeURIComponent(q.trim())}`);
+  const { data, loading } = useFetch<Exercise[]>(
+    `/exercises?sort=popular&q=${encodeURIComponent(q.trim())}`,
+  );
   return (
     <div className="card picker">
       <div className="picker-head">

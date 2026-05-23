@@ -24,6 +24,9 @@ type ExerciseFilter struct {
 	Muscle          string
 	Equipment       string
 	IncludeArchived bool
+	// Popular sorts the exercises the user logged most in the last 90 days
+	// first, then by name.
+	Popular bool
 }
 
 const exerciseColumns = `id, user_id, name, primary_muscle, secondary_muscles, equipment, archived_at`
@@ -59,8 +62,14 @@ func (s *Store) ListExercises(ctx context.Context, userID int64, f ExerciseFilte
 	if !f.IncludeArchived {
 		where = append(where, "archived_at IS NULL")
 	}
+	order := "lower(name)"
+	if f.Popular {
+		order = `(SELECT count(*) FROM workout_sets ws JOIN workouts w ON w.id = ws.workout_id
+			WHERE ws.exercise_id = exercises.id AND w.user_id = $1
+			  AND w.started_at > now() - interval '90 days') DESC, lower(name)`
+	}
 	rows, err := s.pool.Query(ctx, `SELECT `+exerciseColumns+` FROM exercises
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY lower(name)`, args...)
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY `+order, args...)
 	if err != nil {
 		return nil, err
 	}
