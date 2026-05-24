@@ -77,3 +77,18 @@ func TestProgressWithoutIncrementOrDeload(t *testing.T) {
 		t.Fatalf("got %v %+v", out, next)
 	}
 }
+
+func TestDeloadRoundsToTheNearestPlate(t *testing.T) {
+	cases := []struct{ from, want float64 }{
+		{102.5, 92.5}, // 92.25, not 90
+		{80, 72.5},    // 72
+		{142.5, 127.5},
+		{60, 55}, // 54
+	}
+	for _, c := range cases {
+		next, out := Progress(standardRule, ProgressionState{WeightKg: c.from, Failures: 2}, fiveByFive, sets(1, 3, c.from))
+		if out != OutcomeDeloaded || next.WeightKg != c.want {
+			t.Errorf("deload from %v = %v (%v), want %v", c.from, next.WeightKg, out, c.want)
+		}
+	}
+}

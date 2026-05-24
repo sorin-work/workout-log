@@ -1,7 +1,5 @@
 package domain
 
-import "math"
-
 // ProgressionRule describes linear progression for one exercise in a
 // template: add IncrementKg after a successful session, and after
 // DeloadAfter failed sessions in a row drop the weight by DeloadPercent.
@@ -80,7 +78,7 @@ func Progress(rule ProgressionRule, state ProgressionState, target Target, sets 
 func deload(weight float64, rule ProgressionRule) float64 {
 	w := weight * (1 - rule.DeloadPercent/100)
 	if rule.RoundingKg > 0 {
-		w = math.Floor(w/rule.RoundingKg) * rule.RoundingKg
+		w = RoundTo(w, rule.RoundingKg)
 	}
 	if w < 0 {
 		return 0
