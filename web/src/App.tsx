@@ -1,21 +1,24 @@
+import { lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthProvider';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
-import ExercisePage from './pages/ExercisePage';
-import ExercisesPage from './pages/ExercisesPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
-import ProgramsPage from './pages/ProgramsPage';
-import RecordsPage from './pages/RecordsPage';
-import SettingsPage from './pages/SettingsPage';
 import SignupPage from './pages/SignupPage';
-import TemplateEditPage from './pages/TemplateEditPage';
-import TemplatesPage from './pages/TemplatesPage';
-import VolumePage from './pages/VolumePage';
 import WorkoutPage from './pages/WorkoutPage';
-import WorkoutsPage from './pages/WorkoutsPage';
+
+// Pages used less often while training are loaded on demand.
+const ExercisePage = lazy(() => import('./pages/ExercisePage'));
+const ExercisesPage = lazy(() => import('./pages/ExercisesPage'));
+const ProgramsPage = lazy(() => import('./pages/ProgramsPage'));
+const RecordsPage = lazy(() => import('./pages/RecordsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const TemplateEditPage = lazy(() => import('./pages/TemplateEditPage'));
+const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
+const VolumePage = lazy(() => import('./pages/VolumePage'));
+const WorkoutsPage = lazy(() => import('./pages/WorkoutsPage'));
 
 export default function App() {
   return (
