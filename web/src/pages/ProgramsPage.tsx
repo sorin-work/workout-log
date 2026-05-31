@@ -3,6 +3,7 @@ import { ApiError, del, errorMessage, post, put } from '../api/client';
 import type { Program, Template } from '../api/types';
 import { FieldError } from '../components/FieldError';
 import { useFetch } from '../lib/useFetch';
+import { useTitle } from '../lib/useTitle';
 
 interface FormProps {
   program?: Program;
@@ -83,6 +84,7 @@ function ProgramForm({ program, templates, onDone }: FormProps) {
 }
 
 export default function ProgramsPage() {
+  useTitle('Programs');
   const programs = useFetch<Program[]>('/programs');
   const templates = useFetch<Template[]>('/templates');
   const [editing, setEditing] = useState<Program | 'new' | null>(null);

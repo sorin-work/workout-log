@@ -5,6 +5,7 @@ import { useAuth } from '../auth/context';
 import { FieldError } from '../components/FieldError';
 import { DeleteAccount } from '../components/DeleteAccount';
 import { PasswordForm } from '../components/PasswordForm';
+import { useTitle } from '../lib/useTitle';
 
 function timeZones(): string[] {
   try {
@@ -15,6 +16,7 @@ function timeZones(): string[] {
 }
 
 export default function SettingsPage() {
+  useTitle('Settings');
   const { user, setUser } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [unit, setUnit] = useState(user?.unit ?? 'kg');

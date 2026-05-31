@@ -4,6 +4,7 @@ import { BarChart } from '../components/charts/BarChart';
 import { capitalize } from '../lib/text';
 import { trimNumber } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
+import { useTitle } from '../lib/useTitle';
 
 /** "2026-02-09" -> "9 Feb". */
 function weekLabel(weekStart: string): string {
@@ -19,6 +20,7 @@ function heat(sets: number): string {
 }
 
 export default function VolumePage() {
+  useTitle('Weekly volume');
   const [weeks, setWeeks] = useState(12);
   const [muscle, setMuscle] = useState('');
   const { data, error, loading } = useFetch<WeekVolume[]>(`/stats/volume?weeks=${weeks}`);

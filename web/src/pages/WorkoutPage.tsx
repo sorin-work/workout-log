@@ -22,6 +22,7 @@ import { formatDate, formatDuration, formatTime } from '../lib/format';
 import { groupSets } from '../lib/groupSets';
 import { fromKg } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
+import { useTitle } from '../lib/useTitle';
 import { useUnit } from '../lib/useUnit';
 
 const DEFAULT_REST = 120;
@@ -31,6 +32,7 @@ export default function WorkoutPage() {
   const { data: workout, error, loading, setData } = useFetch<Workout>(`/workouts/${id}`);
   const navigate = useNavigate();
   const unit = useUnit();
+  useTitle(workout?.name);
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [restStart, setRestStart] = useState<number | null>(null);

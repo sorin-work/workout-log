@@ -5,8 +5,10 @@ import { formatVolume, formatWeight } from '../lib/units';
 import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
+import { useTitle } from '../lib/useTitle';
 
 export default function WorkoutsPage() {
+  useTitle('Workouts');
   const [params, setParams] = useSearchParams();
   const unit = useUnit();
   const page = Math.max(1, Number(params.get('page')) || 1);

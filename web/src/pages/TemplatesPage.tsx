@@ -6,8 +6,10 @@ import { formatWeight } from '../lib/units';
 import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
+import { useTitle } from '../lib/useTitle';
 
 export default function TemplatesPage() {
+  useTitle('Templates');
   const unit = useUnit();
   const navigate = useNavigate();
   const { data, error, loading, reload } = useFetch<Template[]>('/templates');

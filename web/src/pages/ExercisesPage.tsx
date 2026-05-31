@@ -6,8 +6,10 @@ import { ExerciseForm } from '../components/ExerciseForm';
 import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { capitalize } from '../lib/text';
+import { useTitle } from '../lib/useTitle';
 
 export default function ExercisesPage() {
+  useTitle('Exercises');
   const [q, setQ] = useState('');
   const [muscle, setMuscle] = useState('');
   const [equipment, setEquipment] = useState('');

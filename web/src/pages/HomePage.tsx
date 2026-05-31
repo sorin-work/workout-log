@@ -8,8 +8,10 @@ import { formatDate } from '../lib/format';
 import { formatVolume } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
+import { useTitle } from '../lib/useTitle';
 
 export default function HomePage() {
+  useTitle(undefined);
   const { user } = useAuth();
   const navigate = useNavigate();
   const unit = useUnit();

@@ -6,6 +6,7 @@ import { formatWeight, type Unit } from '../lib/units';
 import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
+import { useTitle } from '../lib/useTitle';
 
 function SetCell({ r, unit }: { r: RecordSet | null; unit: Unit }) {
   if (!r) return <td className="muted">–</td>;
@@ -20,6 +21,7 @@ function SetCell({ r, unit }: { r: RecordSet | null; unit: Unit }) {
 }
 
 export default function RecordsPage() {
+  useTitle('Records');
   const unit = useUnit();
   const { data, error, loading } = useFetch<ExerciseRecords[]>('/records');
   const [q, setQ] = useState('');

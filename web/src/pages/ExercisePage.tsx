@@ -7,6 +7,7 @@ import { formatDate } from '../lib/format';
 import { capitalize } from '../lib/text';
 import { formatWeight, fromKg, trimNumber } from '../lib/units';
 import { useFetch } from '../lib/useFetch';
+import { useTitle } from '../lib/useTitle';
 import { useUnit } from '../lib/useUnit';
 
 type Metric = 'estimatedMax' | 'topWeightKg' | 'volumeKg';
@@ -22,6 +23,7 @@ export default function ExercisePage() {
   const unit = useUnit();
   const [metric, setMetric] = useState<Metric>('estimatedMax');
   const exercise = useFetch<Exercise>(`/exercises/${id}`);
+  useTitle(exercise.data?.name);
   const records = useFetch<ExerciseRecords>(`/exercises/${id}/records`);
   const progress = useFetch<ProgressPoint[]>(`/exercises/${id}/progress`);
 
