@@ -154,3 +154,20 @@ func TestTemplateProgressionSettings(t *testing.T) {
 		t.Fatalf("status %d: %s", res.Status, res.Body)
 	}
 }
+
+func TestCopyTemplate(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("t@example.com")
+	r := row(exerciseID(t, c, "Back Squat"), 5, 5, 100)
+	r["incrementKg"] = 2.5
+	tpl := createTemplate(t, c, templateBody("Day A", r))
+	var cp store.Template
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/templates/%d/copy", tpl.ID), nil, http.StatusCreated, &cp)
+	if cp.ID == tpl.ID || cp.Name != "Day A (copy)" || len(cp.Exercises) != 1 {
+		t.Fatalf("copy: %+v", cp)
+	}
+	if e := cp.Exercises[0]; e.ID == tpl.Exercises[0].ID || e.IncrementKg != 2.5 || e.WeightKg != 100 {
+		t.Fatalf("copied row: %+v", e)
+	}
+	a.signup("o@example.com").mustDo(http.MethodPost, fmt.Sprintf("/api/templates/%d/copy", tpl.ID), nil, http.StatusNotFound, nil)
+}

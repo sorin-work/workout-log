@@ -173,3 +173,26 @@ func (s *Server) handleStartTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusCreated, wo)
 }
+
+func (s *Server) handleCopyTemplate(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	userID := currentUser(r.Context()).ID
+	src, err := s.store.TemplateByID(r.Context(), userID, id)
+	if err != nil {
+		writeStoreError(w, r, err, "Template")
+		return
+	}
+	name := src.Name + " (copy)"
+	if textLength(name) > 60 {
+		name = string([]rune(name)[:60])
+	}
+	t, err := s.store.CopyTemplate(r.Context(), userID, id, name)
+	if err != nil {
+		writeStoreError(w, r, err, "Template")
+		return
+	}
+	writeJSON(w, http.StatusCreated, t)
+}

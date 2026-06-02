@@ -257,3 +257,21 @@ func (s *Store) StartWorkoutFromTemplate(ctx context.Context, userID, templateID
 	}
 	return s.WorkoutByID(ctx, userID, workoutID)
 }
+
+// CopyTemplate duplicates a template with its exercises and progression
+// settings. The copy starts without any failed sessions.
+func (s *Store) CopyTemplate(ctx context.Context, userID, id int64, name string) (Template, error) {
+	src, err := s.TemplateByID(ctx, userID, id)
+	if err != nil {
+		return Template{}, err
+	}
+	in := TemplateInput{Name: name, Notes: src.Notes}
+	for _, te := range src.Exercises {
+		in.Exercises = append(in.Exercises, TemplateExerciseInput{
+			ExerciseID: te.ExerciseID, Sets: te.Sets, Reps: te.Reps, WeightKg: te.WeightKg,
+			RestSeconds: te.RestSeconds, IncrementKg: te.IncrementKg,
+			DeloadAfter: te.DeloadAfter, DeloadPercent: te.DeloadPercent,
+		})
+	}
+	return s.CreateTemplate(ctx, userID, in)
+}

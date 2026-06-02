@@ -84,6 +84,7 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Put("/templates/{id}", s.handleUpdateTemplate)
 			r.Delete("/templates/{id}", s.handleDeleteTemplate)
 			r.Post("/templates/{id}/start", s.handleStartTemplate)
+			r.Post("/templates/{id}/copy", s.handleCopyTemplate)
 
 			r.Get("/programs", s.handleListPrograms)
 			r.Post("/programs", s.handleCreateProgram)
