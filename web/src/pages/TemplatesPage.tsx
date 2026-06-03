@@ -25,6 +25,16 @@ export default function TemplatesPage() {
     }
   }
 
+  async function copy(t: Template) {
+    setActionError('');
+    try {
+      const created = await post<Template>(`/templates/${t.id}/copy`);
+      navigate(`/templates/${created.id}/edit`);
+    } catch (err) {
+      setActionError(errorMessage(err));
+    }
+  }
+
   async function remove(t: Template) {
     if (!window.confirm(`Delete the template "${t.name}"? Past workouts are kept.`)) return;
     setActionError('');
@@ -80,6 +90,9 @@ export default function TemplatesPage() {
               <Link className="btn small" to={`/templates/${t.id}/edit`}>
                 Edit
               </Link>
+              <button className="btn small" onClick={() => copy(t)}>
+                Duplicate
+              </button>
               <button className="btn danger small" onClick={() => remove(t)}>
                 Delete
               </button>
