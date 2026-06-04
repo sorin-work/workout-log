@@ -130,3 +130,42 @@ func (s *Server) handleDeleteSet(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// handleAddWarmups inserts suggested warm-ups before the working sets of an
+// exercise, based on its heaviest planned set.
+func (s *Server) handleAddWarmups(w http.ResponseWriter, r *http.Request) {
+	wo, ok := s.loadWorkout(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		ExerciseID int64 `json:"exerciseId"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	work := 0.0
+	for _, st := range wo.Sets {
+		if st.ExerciseID == req.ExerciseID && !st.Warmup && st.WeightKg > work {
+			work = st.WeightKg
+		}
+	}
+	if work == 0 {
+		writeValidation(w, map[string]string{"exerciseId": "Log a working set with a weight first."})
+		return
+	}
+	var data []store.SetData
+	for _, ws := range domain.WarmupSets(work, 20, domain.SmallestPlateStep(domain.Kilograms)) {
+		data = append(data, store.SetData{ExerciseID: req.ExerciseID, Reps: ws.Reps, WeightKg: ws.WeightKg, Warmup: true})
+	}
+	if len(data) == 0 {
+		writeJSON(w, http.StatusOK, []store.Set{})
+		return
+	}
+	sets, err := s.store.InsertWarmups(r.Context(), wo.ID, req.ExerciseID, data)
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, sets)
+}

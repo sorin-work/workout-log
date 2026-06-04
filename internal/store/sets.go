@@ -1,6 +1,10 @@
 package store
 
-import "context"
+import (
+	"context"
+
+	"github.com/jackc/pgx/v5"
+)
 
 // SetData holds the fields of a set being added or changed.
 type SetData struct {
@@ -61,4 +65,47 @@ func (s *Store) setByID(ctx context.Context, id int64) (Set, error) {
 		FROM workout_sets ws JOIN exercises e ON e.id = ws.exercise_id
 		WHERE ws.id = $1`, id))
 	return st, notFound(err)
+}
+
+// InsertWarmups adds warm-up sets for an exercise right before its first set
+// in the workout, shifting the later sets down.
+func (s *Store) InsertWarmups(ctx context.Context, workoutID, exerciseID int64, warmups []SetData) ([]Set, error) {
+	var ids []int64
+	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var first int
+		err := tx.QueryRow(ctx, `SELECT coalesce(min(position), coalesce(max(position), 0) + 1)
+			FROM workout_sets WHERE workout_id = $1 AND (exercise_id = $2 OR NOT EXISTS (
+				SELECT 1 FROM workout_sets WHERE workout_id = $1 AND exercise_id = $2))`,
+			workoutID, exerciseID).Scan(&first)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE workout_sets SET position = position + $3
+			WHERE workout_id = $1 AND position >= $2`, workoutID, first, len(warmups)); err != nil {
+			return err
+		}
+		for i, d := range warmups {
+			var id int64
+			if err := tx.QueryRow(ctx, `INSERT INTO workout_sets
+				(workout_id, exercise_id, position, reps, weight_kg, warmup)
+				VALUES ($1, $2, $3, $4, $5, true) RETURNING id`,
+				workoutID, exerciseID, first+i, d.Reps, d.WeightKg).Scan(&id); err != nil {
+				return err
+			}
+			ids = append(ids, id)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Set, 0, len(ids))
+	for _, id := range ids {
+		st, err := s.setByID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, st)
+	}
+	return out, nil
 }
