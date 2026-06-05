@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { del, errorMessage, post, put } from '../api/client';
+import { del, errorMessage, get, post, put } from '../api/client';
 import type {
   Exercise,
   FinishResult,
@@ -71,6 +71,13 @@ export default function WorkoutPage() {
         completed: false,
       });
       setData({ ...w, sets: [...w.sets, created] });
+    });
+
+  const addWarmups = (exerciseId: number) =>
+    run(async () => {
+      await post<WorkoutSet[]>(`/workouts/${w.id}/warmups`, { exerciseId });
+      // Later sets moved down, so reload the whole workout.
+      setData(await get<Workout>(`/workouts/${w.id}`));
     });
 
   const updateSet = (set: WorkoutSet, changes: SetChanges) =>
@@ -212,6 +219,11 @@ export default function WorkoutPage() {
               <button className="btn small" onClick={() => addSet(g.exerciseId, g.sets.at(-1))}>
                 Add set
               </button>
+              {!g.sets.some((s) => s.warmup) && g.sets.some((s) => s.weightKg > 20) && (
+                <button className="btn small" onClick={() => addWarmups(g.exerciseId)}>
+                  Add warm-ups
+                </button>
+              )}
               <button
                 className="btn small"
                 onClick={() => setPlates(fromKg(g.sets.at(-1)?.weightKg ?? 0, unit))}
