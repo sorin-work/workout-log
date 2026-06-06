@@ -111,3 +111,27 @@ func TestLastSession(t *testing.T) {
 	other := a.signup("other@example.com")
 	other.mustDo(http.MethodGet, path, nil, http.StatusNotFound, nil)
 }
+
+func TestFinishReportsNewRecords(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("pr@example.com")
+	bench := exerciseID(t, c, "Bench Press")
+	first := createWorkout(t, c, "A", time.Now().Add(-72*time.Hour))
+	addSet(t, c, first.ID, bench, 5, 80, true)
+	var res finishResponse
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/finish", first.ID), nil, http.StatusOK, &res)
+	if len(res.Records) != 0 {
+		t.Fatalf("first session should not be a record: %+v", res.Records)
+	}
+
+	second := createWorkout(t, c, "A", time.Now().Add(-time.Hour))
+	addSet(t, c, second.ID, bench, 3, 85, true)
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/workouts/%d/finish", second.ID), nil, http.StatusOK, &res)
+	// 85x3 = 93.5 beats 80x5 = 93.3, and 85 kg is the heaviest so far.
+	if len(res.Records) != 2 {
+		t.Fatalf("records: %+v", res.Records)
+	}
+	if r := res.Records[1]; r.Kind != "heaviest" || r.Value != 85 || r.Previous != 80 {
+		t.Fatalf("heaviest: %+v", r)
+	}
+}

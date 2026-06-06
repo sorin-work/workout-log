@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sorin-work/workout-log/internal/domain"
 	"github.com/sorin-work/workout-log/internal/store"
 )
 
@@ -195,12 +196,23 @@ func (s *Server) handleFinishWorkout(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, finishResponse{Workout: wo, Progression: changes})
+	u := currentUser(r.Context())
+	sets, err := s.store.LoggedSets(r.Context(), u.ID, 0)
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, finishResponse{
+		Workout:     wo,
+		Progression: changes,
+		Records:     domain.RecordsSetIn(wo.ID, sets, domain.Formula(u.Formula)),
+	})
 }
 
 type finishResponse struct {
 	Workout     store.Workout             `json:"workout"`
 	Progression []store.ProgressionChange `json:"progression"`
+	Records     []domain.NewRecord        `json:"records"`
 }
 
 func (s *Server) handleRepeatWorkout(w http.ResponseWriter, r *http.Request) {

@@ -100,3 +100,44 @@ func ComputeRecords(sets []LoggedSet, f Formula) []ExerciseRecords {
 	sort.Slice(out, func(i, j int) bool { return out[i].ExerciseName < out[j].ExerciseName })
 	return out
 }
+
+// NewRecord is a personal record set in a particular workout.
+type NewRecord struct {
+	ExerciseID   int64   `json:"exerciseId"`
+	ExerciseName string  `json:"exerciseName"`
+	Kind         string  `json:"kind"` // "estimatedMax" or "heaviest"
+	Value        float64 `json:"value"`
+	Previous     float64 `json:"previous"`
+}
+
+// RecordsSetIn compares records with and without one workout and lists the
+// ones that workout set. First-ever sessions of an exercise do not count as
+// records; there is nothing to beat yet.
+func RecordsSetIn(workoutID int64, sets []LoggedSet, f Formula) []NewRecord {
+	var before []LoggedSet
+	for _, s := range sets {
+		if s.WorkoutID != workoutID {
+			before = append(before, s)
+		}
+	}
+	prev := map[int64]ExerciseRecords{}
+	for _, r := range ComputeRecords(before, f) {
+		prev[r.ExerciseID] = r
+	}
+	out := []NewRecord{}
+	for _, r := range ComputeRecords(sets, f) {
+		p, ok := prev[r.ExerciseID]
+		if !ok {
+			continue
+		}
+		if r.EstimatedMax != nil && r.EstimatedMax.WorkoutID == workoutID && p.EstimatedMax != nil &&
+			r.EstimatedMax.Value > p.EstimatedMax.Value {
+			out = append(out, NewRecord{r.ExerciseID, r.ExerciseName, "estimatedMax", r.EstimatedMax.Value, p.EstimatedMax.Value})
+		}
+		if r.Heaviest != nil && r.Heaviest.WorkoutID == workoutID && p.Heaviest != nil &&
+			r.Heaviest.Value > p.Heaviest.Value {
+			out = append(out, NewRecord{r.ExerciseID, r.ExerciseName, "heaviest", r.Heaviest.Value, p.Heaviest.Value})
+		}
+	}
+	return out
+}
