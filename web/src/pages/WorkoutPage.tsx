@@ -1,14 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { del, errorMessage, get, post, put } from '../api/client';
-import type {
-  Exercise,
-  FinishResult,
-  ProgressionChange,
-  Template,
-  Workout,
-  WorkoutSet,
-} from '../api/types';
+import type { Exercise, FinishResult, Template, Workout, WorkoutSet } from '../api/types';
 import { Elapsed } from '../components/Elapsed';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { LastTime } from '../components/LastTime';
@@ -41,7 +34,7 @@ export default function WorkoutPage() {
     workout?.templateId ? `/templates/${workout.templateId}` : null,
   );
   const [plates, setPlates] = useState<number | null>(null);
-  const [progression, setProgression] = useState<ProgressionChange[] | null>(null);
+  const [finished, setFinished] = useState<FinishResult | null>(null);
   const [actionError, setActionError] = useState('');
 
   if (loading && !workout) return <p className="muted">Loading…</p>;
@@ -107,7 +100,7 @@ export default function WorkoutPage() {
       if (open > 0 && !window.confirm(`${open} sets are not ticked off. Finish anyway?`)) return;
       const res = await post<FinishResult>(`/workouts/${w.id}/finish`);
       setData(res.workout);
-      setProgression(res.progression);
+      setFinished(res);
     });
 
   const repeat = () =>
@@ -162,11 +155,12 @@ export default function WorkoutPage() {
         </div>
       </div>
       {actionError && <p className="alert">{actionError}</p>}
-      {progression && (
+      {finished && (
         <ProgressionSummary
-          changes={progression}
+          changes={finished.progression}
+          records={finished.records}
           unit={unit}
-          onClose={() => setProgression(null)}
+          onClose={() => setFinished(null)}
         />
       )}
       {editing ? (

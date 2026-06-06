@@ -828,3 +828,13 @@ table.heat th:first-child {
     background-position: -200% 0;
   }
 }
+
+.badge.pr {
+  margin-left: 0;
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.records-list {
+  margin-bottom: 0.75rem;
+}

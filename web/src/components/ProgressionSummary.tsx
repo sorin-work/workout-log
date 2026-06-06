@@ -1,8 +1,9 @@
-import type { ProgressionChange } from '../api/types';
+import type { NewRecord, ProgressionChange } from '../api/types';
 import { formatWeight, type Unit } from '../lib/units';
 
 interface Props {
   changes: ProgressionChange[];
+  records: NewRecord[];
   unit: Unit;
   onClose(): void;
 }
@@ -20,7 +21,7 @@ function describe(c: ProgressionChange, unit: Unit): string {
   }
 }
 
-export function ProgressionSummary({ changes, unit, onClose }: Props) {
+export function ProgressionSummary({ changes, records, unit, onClose }: Props) {
   return (
     <div className="card highlight progression">
       <div className="page-header">
@@ -29,6 +30,18 @@ export function ProgressionSummary({ changes, unit, onClose }: Props) {
           ×
         </button>
       </div>
+      {records.length > 0 && (
+        <ul className="plain records-list">
+          {records.map((r) => (
+            <li key={`${r.exerciseId}-${r.kind}`}>
+              <span className="badge pr">PR</span> <strong>{r.exerciseName}</strong>:{' '}
+              {r.kind === 'heaviest' ? 'heaviest set' : 'estimated 1RM'}{' '}
+              {formatWeight(r.value, unit)}{' '}
+              <span className="muted">(was {formatWeight(r.previous, unit)})</span>
+            </li>
+          ))}
+        </ul>
+      )}
       {changes.length === 0 ? (
         <p className="muted">Nice work. Nothing in your template changed.</p>
       ) : (

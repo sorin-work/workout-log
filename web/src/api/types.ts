@@ -124,9 +124,18 @@ export interface ProgressionChange {
   failures: number;
 }
 
+export interface NewRecord {
+  exerciseId: number;
+  exerciseName: string;
+  kind: 'estimatedMax' | 'heaviest';
+  value: number;
+  previous: number;
+}
+
 export interface FinishResult {
   workout: Workout;
   progression: ProgressionChange[];
+  records: NewRecord[];
 }
 
 export interface ProgramDay {
