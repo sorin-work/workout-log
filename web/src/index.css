@@ -838,3 +838,42 @@ table.heat th:first-child {
 .records-list {
   margin-bottom: 0.75rem;
 }
+
+.calendar {
+  max-width: 420px;
+  margin-bottom: 1rem;
+}
+
+.calendar h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.calendar-head {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.calendar-day {
+  padding: 0.3rem 0;
+  border-radius: 6px;
+}
+
+.calendar-day.trained {
+  background: var(--accent);
+}
+
+.calendar-day.trained a {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  display: block;
+}

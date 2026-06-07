@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import type { Exercise, Page, WorkoutSummary } from '../api/types';
 import { formatDate, formatDuration } from '../lib/format';
 import { formatVolume, formatWeight } from '../lib/units';
+import { MonthCalendar } from '../components/MonthCalendar';
 import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
@@ -17,6 +19,7 @@ export default function WorkoutsPage() {
   if (exercise) query.set('exerciseId', exercise);
   const { data, error, loading } = useFetch<Page<WorkoutSummary>>(`/workouts?${query}`);
   const exercises = useFetch<Exercise[]>('/exercises?archived=true');
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
 
   function goTo(p: number, ex = exercise) {
     const next: Record<string, string> = {};
@@ -42,6 +45,7 @@ export default function WorkoutsPage() {
           ))}
         </select>
       </div>
+      {!exercise && <MonthCalendar month={month} onMonthChange={setMonth} />}
       {error && <p className="alert">{error}</p>}
       {loading && !data && <Skeleton />}
       {data && data.total === 0 && exercise && (
