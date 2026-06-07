@@ -76,6 +76,7 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Get("/records", s.handleListRecords)
 			r.Get("/stats/volume", s.handleWeeklyVolume)
 			r.Get("/stats/summary", s.handleSummary)
+			r.Get("/stats/calendar", s.handleCalendar)
 			r.Get("/export/sets.csv", s.handleExportSets)
 
 			r.Get("/templates", s.handleListTemplates)

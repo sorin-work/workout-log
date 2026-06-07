@@ -78,3 +78,24 @@ func TestSummaryEndpoint(t *testing.T) {
 		t.Fatalf("summary: %+v", s)
 	}
 }
+
+func TestCalendarUsesTheUsersDay(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("cal@example.com")
+	c.mustDo(http.MethodPut, "/api/me", map[string]any{"unit": "kg", "timezone": "America/New_York"}, http.StatusOK, nil)
+	// 02:30 UTC on 4 June is still the evening of 3 June in New York.
+	createWorkout(t, c, "Late", time.Date(2026, 6, 4, 2, 30, 0, 0, time.UTC))
+	createWorkout(t, c, "Early", time.Date(2026, 6, 3, 12, 0, 0, 0, time.UTC))
+	createWorkout(t, c, "May", time.Date(2026, 5, 31, 23, 0, 0, 0, time.UTC))
+
+	var days []calendarDay
+	c.mustDo(http.MethodGet, "/api/stats/calendar?month=2026-06", nil, http.StatusOK, &days)
+	if len(days) != 1 || days[0].Date != "2026-06-03" || len(days[0].Workouts) != 2 {
+		t.Fatalf("days: %+v", days)
+	}
+	c.mustDo(http.MethodGet, "/api/stats/calendar?month=2026-05", nil, http.StatusOK, &days)
+	if len(days) != 1 || days[0].Date != "2026-05-31" {
+		t.Fatalf("may: %+v", days)
+	}
+	c.mustDo(http.MethodGet, "/api/stats/calendar?month=june", nil, http.StatusBadRequest, nil)
+}

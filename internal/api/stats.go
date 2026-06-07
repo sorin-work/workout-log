@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sorin-work/workout-log/internal/domain"
+	"github.com/sorin-work/workout-log/internal/store"
 )
 
 const (
@@ -55,4 +56,40 @@ func (s *Server) handleSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, domain.Summarize(days, s.now(), loc))
+}
+
+type calendarDay struct {
+	Date     string             `json:"date"`
+	Workouts []store.WorkoutRef `json:"workouts"`
+}
+
+// handleCalendar lists the days of a month that have workouts, using the
+// user's time zone to decide the day.
+func (s *Server) handleCalendar(w http.ResponseWriter, r *http.Request) {
+	u := currentUser(r.Context())
+	loc := userLocation(u.Timezone)
+	month := r.URL.Query().Get("month")
+	if month == "" {
+		month = s.now().In(loc).Format("2006-01")
+	}
+	start, err := time.ParseInLocation("2006-01", month, loc)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "month must look like 2026-06.")
+		return
+	}
+	refs, err := s.store.WorkoutsBetween(r.Context(), u.ID, start, start.AddDate(0, 1, 0))
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	days := []calendarDay{}
+	for _, ref := range refs {
+		d := ref.StartedAt.In(loc).Format(time.DateOnly)
+		if len(days) == 0 || days[len(days)-1].Date != d {
+			days = append(days, calendarDay{Date: d})
+		}
+		last := &days[len(days)-1]
+		last.Workouts = append(last.Workouts, ref)
+	}
+	writeJSON(w, http.StatusOK, days)
 }

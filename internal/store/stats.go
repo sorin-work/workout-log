@@ -48,3 +48,20 @@ func (s *Store) WorkoutDays(ctx context.Context, userID int64, from time.Time) (
 		return d, err
 	})
 }
+
+// WorkoutRef is a workout id, name and start time.
+type WorkoutRef struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	StartedAt time.Time `json:"startedAt"`
+}
+
+// WorkoutsBetween lists the user's workouts that started in [from, to).
+func (s *Store) WorkoutsBetween(ctx context.Context, userID int64, from, to time.Time) ([]WorkoutRef, error) {
+	rows, err := s.pool.Query(ctx, `SELECT id, name, started_at FROM workouts
+		WHERE user_id = $1 AND started_at >= $2 AND started_at < $3 ORDER BY started_at`, userID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowToStructByPos[WorkoutRef])
+}
