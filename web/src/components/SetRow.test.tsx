@@ -67,3 +67,25 @@ describe('SetRow', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ rpe: null }));
   });
 });
+
+describe('SetRow after saving', () => {
+  it('shows the value the server stored', () => {
+    const props = { index: 1, unit: 'kg' as const, onChange: () => {}, onDelete: () => {} };
+    const { rerender } = render(
+      <table>
+        <tbody>
+          <SetRow set={base} {...props} />
+        </tbody>
+      </table>,
+    );
+    rerender(
+      <table>
+        <tbody>
+          <SetRow set={{ ...base, reps: 3, weightKg: 82.5 }} {...props} />
+        </tbody>
+      </table>,
+    );
+    expect(screen.getByLabelText('Weight (kg)')).toHaveValue('82.5');
+    expect(screen.getByLabelText('Reps')).toHaveValue('3');
+  });
+});

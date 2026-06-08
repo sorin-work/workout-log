@@ -28,6 +28,16 @@ export function SetRow({ set, index, unit, onChange, onDelete }: Props) {
   const [weight, setWeight] = useState(trimNumber(fromKg(set.weightKg, unit), 2));
   const [rpe, setRpe] = useState(set.rpe === null ? '' : String(set.rpe));
 
+  // When the saved set changes (the server normalised a value, or warm-ups
+  // were inserted and the workout reloaded) show what was actually stored.
+  const [shown, setShown] = useState({ set, unit });
+  if (shown.set !== set || shown.unit !== unit) {
+    setShown({ set, unit });
+    setReps(String(set.reps));
+    setWeight(trimNumber(fromKg(set.weightKg, unit), 2));
+    setRpe(set.rpe === null ? '' : String(set.rpe));
+  }
+
   function current(): SetChanges {
     return {
       reps: Math.round(parseNumber(reps)),
