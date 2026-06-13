@@ -315,3 +315,29 @@ func TestFilterWorkoutsByExercise(t *testing.T) {
 	}
 	c.mustDo(http.MethodGet, "/api/workouts?exerciseId=x", nil, http.StatusBadRequest, nil)
 }
+
+func TestReorderSets(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("w@example.com")
+	w := createWorkout(t, c, "A", time.Now())
+	s1 := addSet(t, c, w.ID, exerciseID(t, c, "Back Squat"), 5, 100, false)
+	s2 := addSet(t, c, w.ID, exerciseID(t, c, "Bench Press"), 5, 80, false)
+	s3 := addSet(t, c, w.ID, exerciseID(t, c, "Bench Press"), 5, 80, false)
+	path := fmt.Sprintf("/api/workouts/%d/order", w.ID)
+
+	var got store.Workout
+	c.mustDo(http.MethodPut, path, map[string]any{"setIds": []int64{s2.ID, s3.ID, s1.ID}}, http.StatusOK, &got)
+	if got.Sets[0].ID != s2.ID || got.Sets[2].ID != s1.ID || got.Sets[2].Position != 3 {
+		t.Fatalf("order: %+v", got.Sets)
+	}
+	for _, ids := range [][]int64{{s1.ID, s2.ID}, {s1.ID, s1.ID, s2.ID}, {s1.ID, s2.ID, s3.ID, 999999}} {
+		c.mustDo(http.MethodPut, path, map[string]any{"setIds": ids}, http.StatusUnprocessableEntity, nil)
+	}
+	// Someone else's set ids are rejected too.
+	other := a.signup("o@example.com")
+	ow := createWorkout(t, other, "B", time.Now())
+	os1 := addSet(t, other, ow.ID, exerciseID(t, other, "Deadlift"), 5, 100, false)
+	other.mustDo(http.MethodPut, fmt.Sprintf("/api/workouts/%d/order", ow.ID),
+		map[string]any{"setIds": []int64{s1.ID}}, http.StatusUnprocessableEntity, nil)
+	_ = os1
+}

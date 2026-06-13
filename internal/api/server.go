@@ -104,6 +104,7 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Post("/workouts/{id}/repeat", s.handleRepeatWorkout)
 			r.Post("/workouts/{id}/sets", s.handleAddSet)
 			r.Post("/workouts/{id}/warmups", s.handleAddWarmups)
+			r.Put("/workouts/{id}/order", s.handleReorderSets)
 			r.Put("/workouts/{id}/sets/{setID}", s.handleUpdateSet)
 			r.Delete("/workouts/{id}/sets/{setID}", s.handleDeleteSet)
 		})

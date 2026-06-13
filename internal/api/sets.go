@@ -169,3 +169,31 @@ func (s *Server) handleAddWarmups(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusCreated, sets)
 }
+
+func (s *Server) handleReorderSets(w http.ResponseWriter, r *http.Request) {
+	wo, ok := s.loadWorkout(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		SetIDs []int64 `json:"setIds"`
+	}
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	err := s.store.ReorderSets(r.Context(), wo.ID, req.SetIDs)
+	if errors.Is(err, store.ErrConflict) {
+		writeValidation(w, map[string]string{"setIds": "List every set of the workout exactly once."})
+		return
+	}
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	updated, err := s.store.WorkoutByID(r.Context(), currentUser(r.Context()).ID, wo.ID)
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
+}

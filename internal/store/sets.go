@@ -109,3 +109,26 @@ func (s *Store) InsertWarmups(ctx context.Context, workoutID, exerciseID int64, 
 	}
 	return out, nil
 }
+
+// ReorderSets gives the sets of a workout new positions in the order of
+// setIDs, which must list every set of the workout exactly once.
+func (s *Store) ReorderSets(ctx context.Context, workoutID int64, setIDs []int64) error {
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		var matching, total int
+		if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE id = ANY($2)), count(*)
+			FROM workout_sets WHERE workout_id = $1`, workoutID, setIDs).Scan(&matching, &total); err != nil {
+			return err
+		}
+		seen := map[int64]bool{}
+		for _, id := range setIDs {
+			seen[id] = true
+		}
+		if matching != total || len(seen) != total || len(setIDs) != total {
+			return ErrConflict
+		}
+		_, err := tx.Exec(ctx, `UPDATE workout_sets ws SET position = o.pos
+			FROM unnest($2::bigint[]) WITH ORDINALITY AS o(id, pos)
+			WHERE ws.id = o.id AND ws.workout_id = $1`, workoutID, setIDs)
+		return err
+	})
+}
