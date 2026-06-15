@@ -73,6 +73,15 @@ export default function WorkoutPage() {
       setData(await get<Workout>(`/workouts/${w.id}`));
     });
 
+  const moveExercise = (index: number, delta: number) =>
+    run(async () => {
+      const order = groupSets(w.sets);
+      const [g] = order.splice(index, 1);
+      order.splice(index + delta, 0, g);
+      const setIds = order.flatMap((x) => x.sets.map((s) => s.id));
+      setData(await put<Workout>(`/workouts/${w.id}/order`, { setIds }));
+    });
+
   const updateSet = (set: WorkoutSet, changes: SetChanges) =>
     run(async () => {
       if (changes.completed && !set.completed && !changes.warmup) {
@@ -177,13 +186,35 @@ export default function WorkoutPage() {
       )}
 
       {groups.length === 0 && <p className="empty">No exercises yet. Add one to get started.</p>}
-      {groups.map((g) => {
+      {groups.map((g, gi) => {
         let working = 0;
         return (
           <section key={g.exerciseId} className="card exercise-block">
-            <h2>
-              <Link to={`/exercises/${g.exerciseId}`}>{g.exerciseName}</Link>
-            </h2>
+            <div className="page-header">
+              <h2>
+                <Link to={`/exercises/${g.exerciseId}`}>{g.exerciseName}</Link>
+              </h2>
+              {groups.length > 1 && (
+                <div className="row-actions">
+                  <button
+                    className="icon-btn"
+                    aria-label={`Move ${g.exerciseName} up`}
+                    disabled={gi === 0}
+                    onClick={() => moveExercise(gi, -1)}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    className="icon-btn"
+                    aria-label={`Move ${g.exerciseName} down`}
+                    disabled={gi === groups.length - 1}
+                    onClick={() => moveExercise(gi, 1)}
+                  >
+                    ↓
+                  </button>
+                </div>
+              )}
+            </div>
             <LastTime exerciseId={g.exerciseId} workoutId={w.id} unit={unit} />
             <table className="sets">
               <thead>
