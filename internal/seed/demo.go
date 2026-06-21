@@ -21,7 +21,7 @@ const (
 )
 
 // Weeks of history generated for the demo user.
-const demoWeeks = 26
+const demoWeeks = 52
 
 type lift struct {
 	name      string
@@ -45,6 +45,7 @@ var dayB = []lift{
 	{"Deadlift", 1, 5, 80, 5, true},
 	{"Pull-Up", 3, 8, 0, 0, false},
 	{"Hanging Leg Raise", 3, 12, 0, 0, false},
+	{"Landmine Press", 3, 10, 20, 0, false},
 }
 
 // Demo creates the demo user unless it already exists. now anchors the
@@ -100,6 +101,17 @@ func generate(ctx context.Context, tx pgx.Tx, hash string, now time.Time) error 
 		g.exercises[name] = id
 	}
 	if err := rows.Err(); err != nil {
+		return err
+	}
+	// A custom exercise, so the demo shows one in the library.
+	var landmine int64
+	if err := tx.QueryRow(ctx, `INSERT INTO exercises (user_id, name, primary_muscle, secondary_muscles, equipment)
+		VALUES ($1, 'Landmine Press', 'shoulders', '{chest,triceps}', 'barbell') RETURNING id`, g.userID).Scan(&landmine); err != nil {
+		return err
+	}
+	g.exercises["Landmine Press"] = landmine
+	if _, err := tx.Exec(ctx, `INSERT INTO exercise_notes (user_id, exercise_id, notes)
+		VALUES ($1, $2, 'Pinkies on the rings, feet flat, slight arch.')`, g.userID, g.exercises["Bench Press"]); err != nil {
 		return err
 	}
 

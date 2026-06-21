@@ -24,7 +24,7 @@ services:
     environment:
       DATABASE_URL: postgres://workout:workout@db:5432/workout?sslmode=disable
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      # Creates demo@example.com / demo-password with half a year of workouts.
+      # Creates demo@example.com / demo-password with a year of workouts.
       SEED_DEMO: ${SEED_DEMO:-true}
     depends_on:
       db:

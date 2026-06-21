@@ -32,7 +32,7 @@ func TestDemoSeed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if total < 50 {
+	if total < 120 {
 		t.Fatalf("only %d demo workouts", total)
 	}
 	if page[0].StartedAt.After(now) {
