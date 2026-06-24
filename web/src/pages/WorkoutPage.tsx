@@ -13,7 +13,9 @@ import { WorkoutDetailsForm } from '../components/WorkoutDetailsForm';
 import { WorkoutNotes } from '../components/WorkoutNotes';
 import { formatDate, formatDuration, formatTime } from '../lib/format';
 import { groupSets } from '../lib/groupSets';
-import { fromKg } from '../lib/units';
+import { estimateOneRepMax } from '../lib/e1rm';
+import { formatWeight, fromKg } from '../lib/units';
+import { useAuth } from '../auth/context';
 import { useFetch } from '../lib/useFetch';
 import { useTitle } from '../lib/useTitle';
 import { useUnit } from '../lib/useUnit';
@@ -25,6 +27,7 @@ export default function WorkoutPage() {
   const { data: workout, error, loading, setData } = useFetch<Workout>(`/workouts/${id}`);
   const navigate = useNavigate();
   const unit = useUnit();
+  const formula = useAuth().user?.e1rmFormula ?? 'epley';
   useTitle(workout?.name);
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -216,6 +219,19 @@ export default function WorkoutPage() {
               )}
             </div>
             <LastTime exerciseId={g.exerciseId} workoutId={w.id} unit={unit} />
+            {(() => {
+              const best = Math.max(
+                0,
+                ...g.sets
+                  .filter((s) => s.completed && !s.warmup)
+                  .map((s) => estimateOneRepMax(s.weightKg, s.reps, formula)),
+              );
+              return best > 0 ? (
+                <p className="muted small last-time">
+                  Best today: est. 1RM {formatWeight(best, unit)}
+                </p>
+              ) : null;
+            })()}
             <table className="sets">
               <thead>
                 <tr>
