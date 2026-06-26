@@ -255,3 +255,14 @@ func (s *Store) RepeatWorkout(ctx context.Context, userID, id int64, at time.Tim
 	}
 	return s.WorkoutByID(ctx, userID, newID)
 }
+
+// CloseStaleWorkouts finishes workouts that were left open for longer than
+// maxOpen, using the time of their last logged set (or the start time) as
+// the finish time. Progression is not applied to these.
+func (s *Store) CloseStaleWorkouts(ctx context.Context, maxOpen time.Duration) (int64, error) {
+	tag, err := s.pool.Exec(ctx, `UPDATE workouts w
+		SET finished_at = greatest(w.started_at, coalesce(
+			(SELECT max(ws.created_at) FROM workout_sets ws WHERE ws.workout_id = w.id), w.started_at))
+		WHERE w.finished_at IS NULL AND w.started_at < now() - $1::interval`, maxOpen.String())
+	return tag.RowsAffected(), err
+}

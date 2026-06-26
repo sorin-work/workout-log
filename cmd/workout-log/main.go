@@ -97,7 +97,8 @@ func newLogger(level string) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: l}))
 }
 
-// cleanupSessions deletes expired sessions once an hour until ctx ends.
+// cleanupSessions deletes expired sessions and closes workouts that were
+// left open, once an hour until ctx ends.
 func cleanupSessions(ctx context.Context, st *store.Store, logger *slog.Logger) {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
@@ -107,6 +108,12 @@ func cleanupSessions(ctx context.Context, st *store.Store, logger *slog.Logger) 
 			logger.Warn("delete expired sessions", "err", err)
 		} else if n > 0 {
 			logger.Info("deleted expired sessions", "count", n)
+		}
+		closed, err := st.CloseStaleWorkouts(ctx, 12*time.Hour)
+		if err != nil && ctx.Err() == nil {
+			logger.Warn("close stale workouts", "err", err)
+		} else if closed > 0 {
+			logger.Info("closed workouts left open", "count", closed)
 		}
 		select {
 		case <-ctx.Done():

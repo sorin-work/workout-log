@@ -47,3 +47,26 @@ func TestSessionsExpire(t *testing.T) {
 		t.Fatalf("deleted %d sessions, err %v", n, err)
 	}
 }
+
+func TestCloseStaleWorkouts(t *testing.T) {
+	st := store.New(testdb.New(t))
+	ctx := context.Background()
+	u, err := st.CreateUser(ctx, "s@example.com", "S", "hash")
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, _ := st.CreateWorkout(ctx, u.ID, store.WorkoutInput{Name: "Forgot", StartedAt: time.Now().Add(-30 * time.Hour)})
+	fresh, _ := st.CreateWorkout(ctx, u.ID, store.WorkoutInput{Name: "Now", StartedAt: time.Now().Add(-time.Hour)})
+	n, err := st.CloseStaleWorkouts(ctx, 12*time.Hour)
+	if err != nil || n != 1 {
+		t.Fatalf("closed %d, err %v", n, err)
+	}
+	w, _ := st.WorkoutByID(ctx, u.ID, old.ID)
+	if w.FinishedAt == nil || !w.FinishedAt.Equal(w.StartedAt) {
+		t.Fatalf("stale workout: %+v", w)
+	}
+	w, _ = st.WorkoutByID(ctx, u.ID, fresh.ID)
+	if w.FinishedAt != nil {
+		t.Fatal("recent workout was closed")
+	}
+}
