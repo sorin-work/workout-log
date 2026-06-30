@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ApiError, errorMessage, post, put } from '../api/client';
 import type { Exercise, Template } from '../api/types';
@@ -60,8 +60,18 @@ function TemplateForm({ template }: { template?: Template }) {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  // Warn before closing the tab with unsaved changes.
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty]);
 
   function update(key: string, patch: Partial<Row>) {
+    setDirty(true);
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   }
 
@@ -76,6 +86,7 @@ function TemplateForm({ template }: { template?: Template }) {
 
   function add(e: Exercise) {
     setPicking(false);
+    setDirty(true);
     setRows((rs) => [
       ...rs,
       {
@@ -116,6 +127,7 @@ function TemplateForm({ template }: { template?: Template }) {
     try {
       if (template) await put<Template>(`/templates/${template.id}`, body);
       else await post<Template>('/templates', body);
+      setDirty(false);
       navigate('/templates');
     } catch (err) {
       if (err instanceof ApiError && err.code === 'validation_failed') setFields(err.fields);
@@ -272,7 +284,14 @@ function TemplateForm({ template }: { template?: Template }) {
       </div>
 
       <div className="form-actions">
-        <button type="button" className="btn" onClick={() => navigate('/templates')}>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            if (!dirty || window.confirm('Discard your changes to this template?'))
+              navigate('/templates');
+          }}
+        >
           Cancel
         </button>
         <button className="btn primary" disabled={busy}>
