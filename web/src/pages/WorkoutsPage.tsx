@@ -9,6 +9,11 @@ import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
 import { useTitle } from '../lib/useTitle';
 
+/** "2026-07" for the month of d in local time (toISOString would use UTC). */
+export function localMonth(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export default function WorkoutsPage() {
   useTitle('Workouts');
   const [params, setParams] = useSearchParams();
@@ -19,7 +24,7 @@ export default function WorkoutsPage() {
   if (exercise) query.set('exerciseId', exercise);
   const { data, error, loading } = useFetch<Page<WorkoutSummary>>(`/workouts?${query}`);
   const exercises = useFetch<Exercise[]>('/exercises?archived=true');
-  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [month, setMonth] = useState(() => localMonth(new Date()));
 
   function goTo(p: number, ex = exercise) {
     const next: Record<string, string> = {};
