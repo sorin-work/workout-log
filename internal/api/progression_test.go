@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/sorin-work/workout-log/internal/domain"
@@ -109,5 +110,47 @@ func TestEditingTheWeightResetsFailures(t *testing.T) {
 	c.mustDo(http.MethodPut, fmt.Sprintf("/api/templates/%d", tpl.ID), templateBody("A", edited), http.StatusOK, nil)
 	if got := squatTarget(t, c, tpl); got.Failures != 0 || got.WeightKg != 95 {
 		t.Fatalf("target: %+v", got)
+	}
+}
+
+func TestFinishingTwiceProgressesOnce(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("p@example.com")
+	tpl := progressionTemplate(t, c, 100)
+	res := runSession(t, c, tpl, 5, 5, 5)
+	path := fmt.Sprintf("/api/workouts/%d/finish", res.Workout.ID)
+
+	var again finishResponse
+	c.mustDo(http.MethodPost, path, nil, http.StatusOK, &again)
+	if len(again.Progression) != 0 || again.Workout.FinishedAt == nil {
+		t.Fatalf("second finish: %+v", again)
+	}
+	if got := squatTarget(t, c, tpl); got.WeightKg != 102.5 {
+		t.Fatalf("weight after finishing twice = %v, want 102.5", got.WeightKg)
+	}
+}
+
+func TestConcurrentFinishProgressesOnce(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("p@example.com")
+	tpl := progressionTemplate(t, c, 100)
+	var w store.Workout
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/templates/%d/start", tpl.ID), nil, http.StatusCreated, &w)
+	for _, s := range w.Sets {
+		c.mustDo(http.MethodPut, fmt.Sprintf("/api/workouts/%d/sets/%d", w.ID, s.ID), map[string]any{
+			"exerciseId": s.ExerciseID, "reps": s.Reps, "weightKg": s.WeightKg, "completed": true,
+		}, http.StatusOK, nil)
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			c.do(http.MethodPost, fmt.Sprintf("/api/workouts/%d/finish", w.ID), nil)
+		}()
+	}
+	wg.Wait()
+	if got := squatTarget(t, c, tpl); got.WeightKg != 102.5 {
+		t.Fatalf("weight after five simultaneous finishes = %v, want 102.5", got.WeightKg)
 	}
 }

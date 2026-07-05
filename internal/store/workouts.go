@@ -219,17 +219,22 @@ func (s *Store) DeleteWorkout(ctx context.Context, userID, id int64) error {
 	return nil
 }
 
-// FinishWorkout stamps the finish time of a workout.
-func (s *Store) FinishWorkout(ctx context.Context, userID, id int64, at time.Time) (Workout, error) {
+// FinishWorkout stamps the finish time of a workout. finished is false when
+// the workout was already finished, e.g. a double click or a retried
+// request; only the call that actually finishes it should apply progression.
+// The conditional update makes concurrent calls race safely: the row lock
+// lets exactly one of them see finished_at IS NULL.
+func (s *Store) FinishWorkout(ctx context.Context, userID, id int64, at time.Time) (w Workout, finished bool, err error) {
 	tag, err := s.pool.Exec(ctx, `UPDATE workouts SET finished_at = greatest($3, started_at)
-		WHERE id = $1 AND user_id = $2`, id, userID, at)
+		WHERE id = $1 AND user_id = $2 AND finished_at IS NULL`, id, userID, at)
 	if err != nil {
-		return Workout{}, err
+		return Workout{}, false, err
 	}
-	if tag.RowsAffected() == 0 {
-		return Workout{}, ErrNotFound
+	w, err = s.WorkoutByID(ctx, userID, id)
+	if err != nil {
+		return Workout{}, false, err
 	}
-	return s.WorkoutByID(ctx, userID, id)
+	return w, tag.RowsAffected() == 1, nil
 }
 
 // RepeatWorkout starts a new workout with the same exercises, reps and

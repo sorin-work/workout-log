@@ -186,9 +186,16 @@ func (s *Server) handleFinishWorkout(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	wo, err := s.store.FinishWorkout(r.Context(), currentUser(r.Context()).ID, id, s.now())
+	wo, finished, err := s.store.FinishWorkout(r.Context(), currentUser(r.Context()).ID, id, s.now())
 	if err != nil {
 		writeStoreError(w, r, err, "Workout")
+		return
+	}
+	if !finished {
+		// Already finished: report the workout but do not progress again.
+		writeJSON(w, http.StatusOK, finishResponse{
+			Workout: wo, Progression: []store.ProgressionChange{}, Records: []domain.NewRecord{},
+		})
 		return
 	}
 	changes, err := s.store.ApplyProgression(r.Context(), wo)
