@@ -38,6 +38,7 @@ export default function WorkoutPage() {
   );
   const [plates, setPlates] = useState<number | null>(null);
   const [finished, setFinished] = useState<FinishResult | null>(null);
+  const [finishing, setFinishing] = useState(false);
   const [actionError, setActionError] = useState('');
 
   if (loading && !workout) return <p className="muted">Loading…</p>;
@@ -110,9 +111,14 @@ export default function WorkoutPage() {
     run(async () => {
       const open = w.sets.filter((s) => !s.completed).length;
       if (open > 0 && !window.confirm(`${open} sets are not ticked off. Finish anyway?`)) return;
-      const res = await post<FinishResult>(`/workouts/${w.id}/finish`);
-      setData(res.workout);
-      setFinished(res);
+      setFinishing(true);
+      try {
+        const res = await post<FinishResult>(`/workouts/${w.id}/finish`);
+        setData(res.workout);
+        setFinished(res);
+      } finally {
+        setFinishing(false);
+      }
     });
 
   const repeat = () =>
@@ -160,8 +166,8 @@ export default function WorkoutPage() {
               Do again
             </button>
           ) : (
-            <button className="btn primary" onClick={finish}>
-              Finish workout
+            <button className="btn primary" onClick={finish} disabled={finishing}>
+              {finishing ? 'Finishing…' : 'Finish workout'}
             </button>
           )}
         </div>
