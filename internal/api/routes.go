@@ -20,6 +20,7 @@ func (s *Server) exerciseRoutes(r chi.Router) {
 		r.Get("/records", s.handleExerciseRecords)
 		r.Get("/progress", s.handleExerciseProgress)
 		r.Get("/last", s.handleLastSession)
+		r.Get("/history", s.handleExerciseHistory)
 		r.Get("/notes", s.handleGetExerciseNotes)
 		r.Put("/notes", s.handlePutExerciseNotes)
 	})

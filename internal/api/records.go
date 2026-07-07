@@ -88,3 +88,30 @@ func (s *Server) handleLastSession(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, last)
 }
+
+func (s *Server) handleExerciseHistory(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok {
+		return
+	}
+	limit := 10
+	if v := r.URL.Query().Get("limit"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 50 {
+			writeError(w, http.StatusBadRequest, "bad_request", "limit must be between 1 and 50.")
+			return
+		}
+		limit = n
+	}
+	userID := currentUser(r.Context()).ID
+	if _, err := s.store.ExerciseByID(r.Context(), userID, id); err != nil {
+		writeStoreError(w, r, err, "Exercise")
+		return
+	}
+	list, err := s.store.ExerciseHistory(r.Context(), userID, id, limit)
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, list)
+}

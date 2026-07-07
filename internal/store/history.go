@@ -58,3 +58,39 @@ func (s *Store) LastSession(ctx context.Context, userID, exerciseID, excludeWork
 	last.Sets, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (Set, error) { return scanSet(row) })
 	return last, err
 }
+
+// ExerciseHistory returns the most recent sessions of an exercise, newest
+// first, each with its completed sets.
+func (s *Store) ExerciseHistory(ctx context.Context, userID, exerciseID int64, limit int) ([]LastSession, error) {
+	rows, err := s.pool.Query(ctx, `SELECT w.id, w.started_at, `+setColumns+`
+		FROM workout_sets ws
+		JOIN workouts w ON w.id = ws.workout_id
+		JOIN exercises e ON e.id = ws.exercise_id
+		WHERE w.id IN (
+			SELECT w2.id FROM workouts w2
+			WHERE w2.user_id = $1 AND EXISTS (
+				SELECT 1 FROM workout_sets x WHERE x.workout_id = w2.id AND x.exercise_id = $2 AND x.completed)
+			ORDER BY w2.started_at DESC LIMIT $3)
+		  AND ws.exercise_id = $2 AND ws.completed
+		ORDER BY w.started_at DESC, ws.position`, userID, exerciseID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []LastSession{}
+	for rows.Next() {
+		var id int64
+		var at time.Time
+		var st Set
+		if err := rows.Scan(&id, &at, &st.ID, &st.ExerciseID, &st.ExerciseName, &st.Position, &st.Reps,
+			&st.WeightKg, &st.RPE, &st.Completed, &st.Warmup); err != nil {
+			return nil, err
+		}
+		if len(out) == 0 || out[len(out)-1].WorkoutID != id {
+			out = append(out, LastSession{WorkoutID: id, PerformedAt: at})
+		}
+		last := &out[len(out)-1]
+		last.Sets = append(last.Sets, st)
+	}
+	return out, rows.Err()
+}

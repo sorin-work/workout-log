@@ -135,3 +135,24 @@ func TestFinishReportsNewRecords(t *testing.T) {
 		t.Fatalf("heaviest: %+v", r)
 	}
 }
+
+func TestExerciseHistory(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("h@example.com")
+	row1 := exerciseID(t, c, "Barbell Row")
+	for i := 0; i < 3; i++ {
+		w := createWorkout(t, c, "A", time.Now().Add(time.Duration(i-4)*24*time.Hour))
+		addSet(t, c, w.ID, row1, 5, 60+float64(i)*2.5, true)
+		addSet(t, c, w.ID, row1, 5, 60+float64(i)*2.5, true)
+	}
+	var list []struct {
+		Sets []struct {
+			WeightKg float64 `json:"weightKg"`
+		} `json:"sets"`
+	}
+	c.mustDo(http.MethodGet, fmt.Sprintf("/api/exercises/%d/history?limit=2", row1), nil, http.StatusOK, &list)
+	if len(list) != 2 || len(list[0].Sets) != 2 || list[0].Sets[0].WeightKg != 65 || list[1].Sets[0].WeightKg != 62.5 {
+		t.Fatalf("history: %+v", list)
+	}
+	c.mustDo(http.MethodGet, fmt.Sprintf("/api/exercises/%d/history?limit=0", row1), nil, http.StatusBadRequest, nil)
+}
