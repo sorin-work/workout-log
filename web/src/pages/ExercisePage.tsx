@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import type { Exercise, ExerciseRecords, ProgressPoint } from '../api/types';
+import type { Exercise, ExerciseRecords, LastSession, ProgressPoint } from '../api/types';
 import { LineChart } from '../components/charts/LineChart';
 import { ExerciseNotes } from '../components/ExerciseNotes';
 import { formatDate } from '../lib/format';
@@ -26,6 +26,7 @@ export default function ExercisePage() {
   useTitle(exercise.data?.name);
   const records = useFetch<ExerciseRecords>(`/exercises/${id}/records`);
   const progress = useFetch<ProgressPoint[]>(`/exercises/${id}/progress`);
+  const history = useFetch<LastSession[]>(`/exercises/${id}/history?limit=8`);
 
   if (exercise.error) return <p className="alert">{exercise.error}</p>;
   if (!exercise.data) return <p className="muted">Loading…</p>;
@@ -103,6 +104,25 @@ export default function ExercisePage() {
               formatY={(v) => trimNumber(v, 0)}
             />
           </section>
+
+          {history.data && history.data.length > 0 && (
+            <section className="card">
+              <h2>Recent sessions</h2>
+              <ul className="list">
+                {history.data.map((h) => (
+                  <li key={h.workoutId} className="list-row">
+                    <Link to={`/workouts/${h.workoutId}`}>{formatDate(h.performedAt)}</Link>
+                    <span className="muted small">
+                      {h.sets
+                        .filter((s) => !s.warmup)
+                        .map((s) => `${trimNumber(fromKg(s.weightKg, unit))}×${s.reps}`)
+                        .join(', ')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {repMaxes.length > 0 && (
             <section className="card">
