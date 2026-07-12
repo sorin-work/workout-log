@@ -877,3 +877,26 @@ table.heat th:first-child {
   text-decoration: none;
   display: block;
 }
+
+.getting-started {
+  margin-bottom: 1rem;
+}
+
+.getting-started h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
+
+.getting-started ol {
+  margin: 0;
+  padding-left: 1.3rem;
+}
+
+.getting-started li {
+  margin-bottom: 0.35rem;
+}
+
+.getting-started li.done {
+  text-decoration: line-through;
+  color: var(--muted);
+}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { errorMessage, post } from '../api/client';
 import type { Page, Program, Summary, Template, Workout, WorkoutSummary } from '../api/types';
 import { useAuth } from '../auth/context';
+import { GettingStarted } from '../components/GettingStarted';
 import { SummaryStats } from '../components/SummaryStats';
 import { formatDate } from '../lib/format';
 import { formatVolume } from '../lib/units';
@@ -54,6 +55,9 @@ export default function HomePage() {
     <>
       <h1>Welcome back{user?.displayName ? `, ${user.displayName}` : ''}</h1>
       {error && <p className="alert">{error}</p>}
+      {summary.data?.totalWorkouts === 0 && (
+        <GettingStarted hasTemplates={(templates.data?.length ?? 0) > 0} />
+      )}
       {summary.data && summary.data.totalWorkouts > 0 && (
         <SummaryStats summary={summary.data} unit={unit} />
       )}
