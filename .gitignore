@@ -4,6 +4,7 @@
 *.test
 *.out
 coverage.*
+coverage/
 
 # Go workspace
 go.work
