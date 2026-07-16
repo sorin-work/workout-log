@@ -36,6 +36,23 @@ docker compose up --build
 Open http://localhost:4413 and log in with the demo account
 `demo@example.com` / `demo-password`.
 
+## Configuration
+
+The server is configured with environment variables:
+
+| Variable         | Default | Description                                                  |
+| ---------------- | ------- | ------------------------------------------------------------ |
+| `DATABASE_URL`   |         | PostgreSQL connection string (required)                      |
+| `PORT`           | `8080`  | HTTP port                                                    |
+| `WEB_DIR`        |         | Directory with the built web app to serve; API only if empty |
+| `LOG_LEVEL`      | `info`  | `debug`, `info`, `warn` or `error` (JSON logs on stdout)     |
+| `SESSION_TTL`    | `720h`  | How long a login lasts                                       |
+| `SECURE_COOKIES` | `false` | Set to `true` when served over HTTPS                         |
+| `SEED_DEMO`      | `false` | Create the demo account on startup (`true` in compose)       |
+
+Docker compose also reads `WEB_PORT` (default `4413`), `DB_PORT` (`5432`)
+and `LOG_LEVEL`.
+
 ## Local development
 
 You need Go 1.26+, Node 22+ and PostgreSQL.
