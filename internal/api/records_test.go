@@ -156,3 +156,20 @@ func TestExerciseHistory(t *testing.T) {
 	}
 	c.mustDo(http.MethodGet, fmt.Sprintf("/api/exercises/%d/history?limit=0", row1), nil, http.StatusBadRequest, nil)
 }
+
+func TestProgressIncludesBackfilledWorkoutsInOrder(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("bf@example.com")
+	ohp := exerciseID(t, c, "Overhead Press")
+	recent := createWorkout(t, c, "B", time.Now().Add(-24*time.Hour))
+	addSet(t, c, recent.ID, ohp, 5, 50, true)
+	// Logged afterwards from a paper notebook.
+	old := createWorkout(t, c, "B", time.Now().Add(-30*24*time.Hour))
+	addSet(t, c, old.ID, ohp, 5, 40, true)
+
+	var pts []domain.ProgressPoint
+	c.mustDo(http.MethodGet, fmt.Sprintf("/api/exercises/%d/progress", ohp), nil, http.StatusOK, &pts)
+	if len(pts) != 2 || pts[0].WorkoutID != old.ID || pts[1].TopWeightKg != 50 {
+		t.Fatalf("points: %+v", pts)
+	}
+}

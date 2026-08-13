@@ -38,7 +38,13 @@ func ProgressSeries(sets []LoggedSet, f Formula) []ProgressPoint {
 		p.VolumeKg = math.Round(p.VolumeKg*10) / 10
 		out = append(out, *p)
 	}
-	// Workout ids grow with time, so this keeps the series in order.
-	sort.Slice(out, func(i, j int) bool { return out[i].WorkoutID < out[j].WorkoutID })
+	// Order by when the workout happened. Ids only follow the order in which
+	// workouts were logged, and back-filled workouts get newer ids.
+	sort.Slice(out, func(i, j int) bool {
+		if !out[i].PerformedAt.Equal(out[j].PerformedAt) {
+			return out[i].PerformedAt.Before(out[j].PerformedAt)
+		}
+		return out[i].WorkoutID < out[j].WorkoutID
+	})
 	return out
 }
