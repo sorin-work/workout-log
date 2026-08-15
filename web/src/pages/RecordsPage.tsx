@@ -20,12 +20,23 @@ function SetCell({ r, unit }: { r: RecordSet | null; unit: Unit }) {
   );
 }
 
+type SortKey = 'name' | 'max' | 'recent';
+
+const sorters: Record<SortKey, (a: ExerciseRecords, b: ExerciseRecords) => number> = {
+  name: (a, b) => a.exerciseName.localeCompare(b.exerciseName),
+  max: (a, b) => (b.estimatedMax?.value ?? 0) - (a.estimatedMax?.value ?? 0),
+  recent: (a, b) => Date.parse(b.lastDone) - Date.parse(a.lastDone),
+};
+
 export default function RecordsPage() {
   useTitle('Records');
   const unit = useUnit();
   const { data, error, loading } = useFetch<ExerciseRecords[]>('/records');
   const [q, setQ] = useState('');
-  const shown = data?.filter((r) => r.exerciseName.toLowerCase().includes(q.trim().toLowerCase()));
+  const [sort, setSort] = useState<SortKey>('name');
+  const shown = data
+    ?.filter((r) => r.exerciseName.toLowerCase().includes(q.trim().toLowerCase()))
+    .sort(sorters[sort]);
 
   return (
     <>
@@ -46,6 +57,15 @@ export default function RecordsPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
+            <select
+              aria-label="Sort records"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+            >
+              <option value="name">By name</option>
+              <option value="max">Strongest first</option>
+              <option value="recent">Recently trained</option>
+            </select>
           </div>
           <div className="card">
             <table className="table">
