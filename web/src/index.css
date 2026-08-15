@@ -900,3 +900,7 @@ table.heat th:first-child {
   text-decoration: line-through;
   color: var(--muted);
 }
+
+.segmented.range {
+  margin-bottom: 0.5rem;
+}

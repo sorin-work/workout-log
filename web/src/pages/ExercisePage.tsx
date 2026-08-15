@@ -12,6 +12,13 @@ import { useUnit } from '../lib/useUnit';
 
 type Metric = 'estimatedMax' | 'topWeightKg' | 'volumeKg';
 
+const RANGES = [
+  { key: '3m', label: '3 months', months: 3 },
+  { key: '6m', label: '6 months', months: 6 },
+  { key: '1y', label: '1 year', months: 12 },
+  { key: 'all', label: 'All', months: 0 },
+] as const;
+
 const METRICS: { key: Metric; label: string }[] = [
   { key: 'estimatedMax', label: 'Estimated 1RM' },
   { key: 'topWeightKg', label: 'Top set' },
@@ -22,6 +29,7 @@ export default function ExercisePage() {
   const { id } = useParams();
   const unit = useUnit();
   const [metric, setMetric] = useState<Metric>('estimatedMax');
+  const [range, setRange] = useState<(typeof RANGES)[number]['key']>('6m');
   const exercise = useFetch<Exercise>(`/exercises/${id}`);
   useTitle(exercise.data?.name);
   const records = useFetch<ExerciseRecords>(`/exercises/${id}/records`);
@@ -32,8 +40,12 @@ export default function ExercisePage() {
   if (!exercise.data) return <p className="muted">Loading…</p>;
   const e = exercise.data;
   const r = records.data;
+  const months = RANGES.find((x) => x.key === range)?.months ?? 0;
+  const since = new Date();
+  since.setMonth(since.getMonth() - months);
   const points = (progress.data ?? [])
     .filter((p) => p[metric] > 0)
+    .filter((p) => months === 0 || Date.parse(p.performedAt) >= since.getTime())
     .map((p) => ({
       x: Date.parse(p.performedAt),
       y: fromKg(p[metric], unit),
@@ -97,6 +109,17 @@ export default function ExercisePage() {
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="segmented range">
+              {RANGES.map((x) => (
+                <button
+                  key={x.key}
+                  className={range === x.key ? 'active' : ''}
+                  onClick={() => setRange(x.key)}
+                >
+                  {x.label}
+                </button>
+              ))}
             </div>
             <LineChart
               points={points}
