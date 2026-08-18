@@ -236,7 +236,7 @@ func (s *Store) StartWorkoutFromTemplate(ctx context.Context, userID, templateID
 	var workoutID int64
 	err = pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		if err := tx.QueryRow(ctx, `INSERT INTO workouts (user_id, name, notes, started_at, template_id)
-			VALUES ($1, $2, '', $3, $4) RETURNING id`, userID, t.Name, at, t.ID).Scan(&workoutID); err != nil {
+			VALUES ($1, $2, $3, $4, $5) RETURNING id`, userID, t.Name, t.Notes, at, t.ID).Scan(&workoutID); err != nil {
 			return err
 		}
 		pos := 0

@@ -119,7 +119,7 @@ func TestStartWorkoutFromTemplate(t *testing.T) {
 
 	var w store.Workout
 	c.mustDo(http.MethodPost, fmt.Sprintf("/api/templates/%d/start", tpl.ID), nil, http.StatusCreated, &w)
-	if w.Name != "Day A" || w.TemplateID == nil || *w.TemplateID != tpl.ID {
+	if w.Name != "Day A" || w.TemplateID == nil || *w.TemplateID != tpl.ID || w.Notes != "" {
 		t.Fatalf("workout: %+v", w)
 	}
 	if len(w.Sets) != 5 {
@@ -170,4 +170,17 @@ func TestCopyTemplate(t *testing.T) {
 		t.Fatalf("copied row: %+v", e)
 	}
 	a.signup("o@example.com").mustDo(http.MethodPost, fmt.Sprintf("/api/templates/%d/copy", tpl.ID), nil, http.StatusNotFound, nil)
+}
+
+func TestTemplateNotesCarryIntoTheWorkout(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("t@example.com")
+	body := templateBody("Day A", row(exerciseID(t, c, "Back Squat"), 3, 5, 100))
+	body["notes"] = "Belt on the top set."
+	tpl := createTemplate(t, c, body)
+	var w store.Workout
+	c.mustDo(http.MethodPost, fmt.Sprintf("/api/templates/%d/start", tpl.ID), nil, http.StatusCreated, &w)
+	if w.Notes != "Belt on the top set." {
+		t.Fatalf("notes = %q", w.Notes)
+	}
 }
