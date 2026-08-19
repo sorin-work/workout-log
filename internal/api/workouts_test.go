@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"testing"
@@ -340,4 +341,22 @@ func TestReorderSets(t *testing.T) {
 	other.mustDo(http.MethodPut, fmt.Sprintf("/api/workouts/%d/order", ow.ID),
 		map[string]any{"setIds": []int64{s1.ID}}, http.StatusUnprocessableEntity, nil)
 	_ = os1
+}
+
+func TestSetLimitPerWorkout(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("w@example.com")
+	w := createWorkout(t, c, "Volume day", time.Now())
+	curl := exerciseID(t, c, "Dumbbell Curl")
+	for i := 0; i < maxSetsPerWorkout; i++ {
+		if _, err := a.store.AddSet(context.Background(), w.ID, store.SetData{ExerciseID: curl, Reps: 10, WeightKg: 10}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	res := c.do(http.MethodPost, fmt.Sprintf("/api/workouts/%d/sets", w.ID), map[string]any{
+		"exerciseId": curl, "reps": 10, "weightKg": 10,
+	})
+	if res.Status != http.StatusUnprocessableEntity || errorFields(t, res)["sets"] == "" {
+		t.Fatalf("status %d: %s", res.Status, res.Body)
+	}
 }

@@ -60,9 +60,16 @@ func (s *Server) loadWorkout(w http.ResponseWriter, r *http.Request) (store.Work
 	return wo, true
 }
 
+// maxSetsPerWorkout keeps a runaway client from filling a workout forever.
+const maxSetsPerWorkout = 200
+
 func (s *Server) handleAddSet(w http.ResponseWriter, r *http.Request) {
 	wo, ok := s.loadWorkout(w, r)
 	if !ok {
+		return
+	}
+	if len(wo.Sets) >= maxSetsPerWorkout {
+		writeValidation(w, map[string]string{"sets": "A workout can have at most 200 sets."})
 		return
 	}
 	var req setRequest
