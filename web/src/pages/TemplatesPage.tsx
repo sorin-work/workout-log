@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { del, errorMessage, post } from '../api/client';
+import { del, post } from '../api/client';
 import type { Template, Workout } from '../api/types';
 import { formatWeight } from '../lib/units';
 import { Skeleton } from '../components/Skeleton';
+import { useAction } from '../lib/useAction';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
 import { useTitle } from '../lib/useTitle';
@@ -13,38 +13,26 @@ export default function TemplatesPage() {
   const unit = useUnit();
   const navigate = useNavigate();
   const { data, error, loading, reload } = useFetch<Template[]>('/templates');
-  const [actionError, setActionError] = useState('');
+  const action = useAction();
 
-  async function start(t: Template) {
-    setActionError('');
-    try {
+  const start = (t: Template) =>
+    action.run(async () => {
       const w = await post<Workout>(`/templates/${t.id}/start`);
       navigate(`/workouts/${w.id}`);
-    } catch (err) {
-      setActionError(errorMessage(err));
-    }
-  }
+    });
 
-  async function copy(t: Template) {
-    setActionError('');
-    try {
+  const copy = (t: Template) =>
+    action.run(async () => {
       const created = await post<Template>(`/templates/${t.id}/copy`);
       navigate(`/templates/${created.id}/edit`);
-    } catch (err) {
-      setActionError(errorMessage(err));
-    }
-  }
+    });
 
-  async function remove(t: Template) {
-    if (!window.confirm(`Delete the template "${t.name}"? Past workouts are kept.`)) return;
-    setActionError('');
-    try {
+  const remove = (t: Template) =>
+    action.run(async () => {
+      if (!window.confirm(`Delete the template "${t.name}"? Past workouts are kept.`)) return;
       await del(`/templates/${t.id}`);
       reload();
-    } catch (err) {
-      setActionError(errorMessage(err));
-    }
-  }
+    });
 
   return (
     <>
@@ -54,7 +42,7 @@ export default function TemplatesPage() {
           New template
         </Link>
       </div>
-      {(error || actionError) && <p className="alert">{error || actionError}</p>}
+      {(error || action.error) && <p className="alert">{error || action.error}</p>}
       {loading && !data && <Skeleton />}
       {data && data.length === 0 && (
         <div className="empty">
@@ -84,7 +72,7 @@ export default function TemplatesPage() {
               {t.exercises.length === 0 && <li className="muted">No exercises yet</li>}
             </ul>
             <div className="actions">
-              <button className="btn primary small" onClick={() => start(t)}>
+              <button className="btn primary small" disabled={action.busy} onClick={() => start(t)}>
                 Start
               </button>
               <Link className="btn small" to={`/templates/${t.id}/edit`}>
