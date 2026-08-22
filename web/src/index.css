@@ -904,3 +904,30 @@ table.heat th:first-child {
 .segmented.range {
   margin-bottom: 0.5rem;
 }
+
+@media print {
+  .topbar,
+  .actions,
+  .page-footer,
+  .rest-timer,
+  .picker,
+  button {
+    display: none !important;
+  }
+
+  body,
+  .card {
+    background: #fff;
+    color: #000;
+    border-color: #ccc;
+  }
+
+  .exercise-block {
+    break-inside: avoid;
+  }
+
+  table.sets input {
+    border: none;
+    padding: 0;
+  }
+}
