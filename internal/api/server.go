@@ -22,6 +22,9 @@ type Options struct {
 	WebDir string
 }
 
+// Version is set at build time with -ldflags "-X .../internal/api.Version=...".
+var Version = "dev"
+
 // loginAttemptsPerMinute limits sign-up and login requests per client IP.
 const loginAttemptsPerMinute = 10
 
@@ -47,6 +50,9 @@ func NewServer(st *store.Store, opts Options) *Server {
 	r.Route("/api", func(r chi.Router) {
 		r.Use(requestLogger)
 		r.Get("/health", s.handleHealth)
+		r.Get("/version", func(w http.ResponseWriter, r *http.Request) {
+			writeJSON(w, http.StatusOK, map[string]string{"version": Version})
+		})
 
 		r.Group(func(r chi.Router) {
 			r.Use(newRateLimiter(loginAttemptsPerMinute, time.Minute).middleware)

@@ -71,7 +71,7 @@ func run() error {
 	}
 	errc := make(chan error, 1)
 	go func() {
-		logger.Info("listening", "addr", srv.Addr)
+		logger.Info("listening", "addr", srv.Addr, "version", api.Version)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errc <- err
 		}

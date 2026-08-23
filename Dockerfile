@@ -8,13 +8,14 @@ COPY web/ ./
 RUN npm run build
 
 FROM golang:1.26-alpine AS api
+ARG VERSION=dev
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY cmd/ cmd/
 COPY internal/ internal/
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/workout-log ./cmd/workout-log
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X github.com/sorin-work/workout-log/internal/api.Version=${VERSION}" -o /out/workout-log ./cmd/workout-log
 
 FROM alpine:3.21
 RUN addgroup -S app && adduser -S -G app app

@@ -21,3 +21,12 @@ func TestUnknownAPIRoute(t *testing.T) {
 		t.Fatalf("status %d", res.Status)
 	}
 }
+
+func TestVersion(t *testing.T) {
+	a := newTestAPI(t)
+	var body map[string]string
+	a.client().mustDo(http.MethodGet, "/api/version", nil, http.StatusOK, &body)
+	if body["version"] != "dev" {
+		t.Fatalf("version = %q", body["version"])
+	}
+}
