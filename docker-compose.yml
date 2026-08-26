@@ -19,7 +19,10 @@ services:
       retries: 10
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://workout:workout@db:5432/workout?sslmode=disable

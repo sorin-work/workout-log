@@ -931,3 +931,7 @@ table.heat th:first-child {
     padding: 0;
   }
 }
+
+.version {
+  margin-top: 2rem;
+}

@@ -3,6 +3,7 @@ import { ApiError, errorMessage, put } from '../api/client';
 import type { User } from '../api/types';
 import { useAuth } from '../auth/context';
 import { FieldError } from '../components/FieldError';
+import { useFetch } from '../lib/useFetch';
 import { DeleteAccount } from '../components/DeleteAccount';
 import { PasswordForm } from '../components/PasswordForm';
 import { useTitle } from '../lib/useTitle';
@@ -102,6 +103,13 @@ export default function SettingsPage() {
       </div>
       <PasswordForm />
       <DeleteAccount />
+      <AppVersion />
     </>
   );
+}
+
+function AppVersion() {
+  const { data } = useFetch<{ version: string }>('/version');
+  if (!data) return null;
+  return <p className="muted small center version">Workout Log {data.version}</p>;
 }
