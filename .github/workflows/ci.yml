@@ -32,7 +32,9 @@ jobs:
       - name: gofmt
         run: test -z "$(gofmt -l cmd internal)"
       - run: go vet ./...
-      - run: go test -race ./...
+      - run: go test -race -coverprofile=coverage.out ./...
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out | tail -1
       - run: go build ./cmd/workout-log
 
   web:
@@ -51,7 +53,7 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
-      - run: npm test
+      - run: npm run test:coverage
       - run: npm run build
 
   docker:
@@ -59,4 +61,12 @@ jobs:
     needs: [api, web]
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t workout-log .
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: workout-log:ci
+          build-args: VERSION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
