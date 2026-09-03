@@ -99,3 +99,25 @@ func TestCalendarUsesTheUsersDay(t *testing.T) {
 	}
 	c.mustDo(http.MethodGet, "/api/stats/calendar?month=june", nil, http.StatusBadRequest, nil)
 }
+
+func TestWeeklyVolumeUsesTheUsersWeek(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("tz@example.com")
+	c.mustDo(http.MethodPut, "/api/me", map[string]any{"unit": "kg", "timezone": "America/Chicago"}, http.StatusOK, nil)
+	chicago, _ := time.LoadLocation("America/Chicago")
+	// Sunday evening in Chicago, already Monday in UTC.
+	w := createWorkout(t, c, "Sunday", time.Date(2026, 8, 30, 21, 0, 0, 0, chicago))
+	squat := exerciseID(t, c, "Back Squat")
+	for i := 0; i < 3; i++ {
+		addSet(t, c, w.ID, squat, 5, 100, true)
+	}
+	var weeks []domain.WeekVolume
+	c.mustDo(http.MethodGet, "/api/stats/volume?weeks=104", nil, http.StatusOK, &weeks)
+	got := map[string]float64{}
+	for _, wk := range weeks {
+		got[wk.WeekStart] = wk.Muscles["quads"].Sets
+	}
+	if got["2026-08-24"] != 3 || got["2026-08-31"] != 0 {
+		t.Fatalf("week of 24 Aug = %v, week of 31 Aug = %v", got["2026-08-24"], got["2026-08-31"])
+	}
+}

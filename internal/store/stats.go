@@ -10,16 +10,17 @@ import (
 )
 
 // ExerciseWeeks returns completed working sets per exercise and week since
-// from, for the weekly volume report.
-func (s *Store) ExerciseWeeks(ctx context.Context, userID int64, from time.Time) ([]domain.ExerciseWeek, error) {
-	rows, err := s.pool.Query(ctx, `SELECT date_trunc('week', w.started_at), e.primary_muscle, e.secondary_muscles,
+// from, for the weekly volume report. Weeks start on Monday in the time zone
+// tz; the returned WeekStart carries that local date.
+func (s *Store) ExerciseWeeks(ctx context.Context, userID int64, from time.Time, tz string) ([]domain.ExerciseWeek, error) {
+	rows, err := s.pool.Query(ctx, `SELECT date_trunc('week', w.started_at AT TIME ZONE $3), e.primary_muscle, e.secondary_muscles,
 			count(*), sum(ws.reps * ws.weight_kg)::float8
 		FROM workout_sets ws
 		JOIN workouts w ON w.id = ws.workout_id
 		JOIN exercises e ON e.id = ws.exercise_id
 		WHERE w.user_id = $1 AND w.started_at >= $2 AND ws.completed AND NOT ws.warmup
 		GROUP BY 1, e.id
-		ORDER BY 1`, userID, from)
+		ORDER BY 1`, userID, from, tz)
 	if err != nil {
 		return nil, err
 	}

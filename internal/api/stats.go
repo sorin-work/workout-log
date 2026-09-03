@@ -37,7 +37,7 @@ func (s *Server) handleWeeklyVolume(w http.ResponseWriter, r *http.Request) {
 	loc := userLocation(u.Timezone)
 	now := s.now()
 	from := domain.WeekStart(now, loc).AddDate(0, 0, -7*(weeks-1))
-	rows, err := s.store.ExerciseWeeks(r.Context(), u.ID, from)
+	rows, err := s.store.ExerciseWeeks(r.Context(), u.ID, from, loc.String())
 	if err != nil {
 		writeInternal(w, r, err)
 		return
