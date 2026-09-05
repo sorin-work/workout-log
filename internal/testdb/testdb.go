@@ -13,13 +13,22 @@ import (
 	"os"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/sorin-work/workout-log/internal/database"
 )
 
+// Option changes the pool configuration of New.
+type Option func(*pgxpool.Config)
+
+// WithTracer installs a query tracer, e.g. to count queries in a test.
+func WithTracer(tr pgx.QueryTracer) Option {
+	return func(c *pgxpool.Config) { c.ConnConfig.Tracer = tr }
+}
+
 // New returns a pool whose search_path points at a new, migrated schema.
-func New(t testing.TB) *pgxpool.Pool {
+func New(t testing.TB, opts ...Option) *pgxpool.Pool {
 	t.Helper()
 	url := os.Getenv("TEST_DATABASE_URL")
 	if url == "" {
@@ -42,6 +51,9 @@ func New(t testing.TB) *pgxpool.Pool {
 		t.Fatalf("parse url: %v", err)
 	}
 	cfg.ConnConfig.RuntimeParams["search_path"] = schema
+	for _, o := range opts {
+		o(cfg)
+	}
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		t.Fatalf("connect to schema: %v", err)

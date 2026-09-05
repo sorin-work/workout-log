@@ -155,44 +155,58 @@ func (s *Store) ListWorkouts(ctx context.Context, userID int64, f WorkoutFilter,
 	if err := rows.Err(); err != nil {
 		return nil, 0, err
 	}
-	for i := range out {
-		if out[i].Exercises, err = s.exerciseSummaries(ctx, out[i].ID); err != nil {
-			return nil, 0, err
-		}
+	if err := s.attachExerciseSummaries(ctx, out); err != nil {
+		return nil, 0, err
 	}
 	return out, total, nil
 }
 
-// exerciseSummaries returns the exercises of one workout with their
-// completed working sets and the heaviest of them.
-func (s *Store) exerciseSummaries(ctx context.Context, workoutID int64) ([]ExerciseSummary, error) {
-	rows, err := s.pool.Query(ctx, `SELECT DISTINCT ON (ws.exercise_id) ws.exercise_id, e.name,
-			count(*) OVER (PARTITION BY ws.exercise_id), ws.reps, ws.weight_kg::float8,
-			min(ws.position) OVER (PARTITION BY ws.exercise_id) AS first_pos
+// attachExerciseSummaries fills in the exercises of every workout in the
+// page with one query, instead of one query per workout.
+func (s *Store) attachExerciseSummaries(ctx context.Context, list []WorkoutSummary) error {
+	if len(list) == 0 {
+		return nil
+	}
+	ids := make([]int64, len(list))
+	byID := make(map[int64]*WorkoutSummary, len(list))
+	for i := range list {
+		ids[i] = list[i].ID
+		list[i].Exercises = []ExerciseSummary{}
+		byID[list[i].ID] = &list[i]
+	}
+	rows, err := s.pool.Query(ctx, `SELECT DISTINCT ON (ws.workout_id, ws.exercise_id) ws.workout_id, ws.exercise_id, e.name,
+			count(*) OVER (PARTITION BY ws.workout_id, ws.exercise_id), ws.reps, ws.weight_kg::float8,
+			min(ws.position) OVER (PARTITION BY ws.workout_id, ws.exercise_id) AS first_pos
 		FROM workout_sets ws JOIN exercises e ON e.id = ws.exercise_id
-		WHERE ws.workout_id = $1 AND ws.completed AND NOT ws.warmup
-		ORDER BY ws.exercise_id, ws.weight_kg DESC, ws.reps DESC`, workoutID)
+		WHERE ws.workout_id = ANY($1) AND ws.completed AND NOT ws.warmup
+		ORDER BY ws.workout_id, ws.exercise_id, ws.weight_kg DESC, ws.reps DESC`, ids)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	type row struct {
-		ExerciseSummary
-		firstPos int
+	defer rows.Close()
+	firstPos := map[[2]int64]int{}
+	for rows.Next() {
+		var workoutID int64
+		var e ExerciseSummary
+		var pos int
+		if err := rows.Scan(&workoutID, &e.ExerciseID, &e.Name, &e.Sets, &e.TopReps, &e.TopKg, &pos); err != nil {
+			return err
+		}
+		firstPos[[2]int64{workoutID, e.ExerciseID}] = pos
+		w := byID[workoutID]
+		w.Exercises = append(w.Exercises, e)
 	}
-	list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (row, error) {
-		var x row
-		err := r.Scan(&x.ExerciseID, &x.Name, &x.Sets, &x.TopReps, &x.TopKg, &x.firstPos)
-		return x, err
-	})
-	if err != nil {
-		return nil, err
+	if err := rows.Err(); err != nil {
+		return err
 	}
-	sort.Slice(list, func(i, j int) bool { return list[i].firstPos < list[j].firstPos })
-	out := make([]ExerciseSummary, len(list))
-	for i, x := range list {
-		out[i] = x.ExerciseSummary
+	for i := range list {
+		ex := list[i].Exercises
+		id := list[i].ID
+		sort.Slice(ex, func(a, b int) bool {
+			return firstPos[[2]int64{id, ex[a].ExerciseID}] < firstPos[[2]int64{id, ex[b].ExerciseID}]
+		})
 	}
-	return out, nil
+	return nil
 }
 
 // UpdateWorkout changes the name, notes and times of a workout.
