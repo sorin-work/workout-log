@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { MUSCLE_GROUPS, type WeekVolume } from '../api/types';
 import { BarChart } from '../components/charts/BarChart';
 import { capitalize } from '../lib/text';
-import { trimNumber } from '../lib/units';
+import { fromKg, trimNumber } from '../lib/units';
+import { useUnit } from '../lib/useUnit';
 import { useFetch } from '../lib/useFetch';
 import { useTitle } from '../lib/useTitle';
 
@@ -23,12 +24,24 @@ export default function VolumePage() {
   useTitle('Weekly volume');
   const [weeks, setWeeks] = useState(12);
   const [muscle, setMuscle] = useState('');
+  const [measure, setMeasure] = useState<'sets' | 'volume'>('sets');
+  const unit = useUnit();
   const { data, error, loading } = useFetch<WeekVolume[]>(`/stats/volume?weeks=${weeks}`);
 
   const bars =
     data?.map((w) => ({
       label: weekLabel(w.weekStart),
-      value: muscle ? (w.muscles[muscle]?.sets ?? 0) : w.totalSets,
+      value:
+        measure === 'sets'
+          ? muscle
+            ? (w.muscles[muscle]?.sets ?? 0)
+            : w.totalSets
+          : fromKg(
+              muscle
+                ? (w.muscles[muscle]?.volumeKg ?? 0)
+                : Object.values(w.muscles).reduce((sum, m) => sum + m.volumeKg, 0),
+              unit,
+            ),
     })) ?? [];
   const trained = MUSCLE_GROUPS.filter((m) => data?.some((w) => (w.muscles[m]?.sets ?? 0) > 0));
 
@@ -62,7 +75,27 @@ export default function VolumePage() {
                 ))}
               </select>
             </div>
-            <BarChart bars={bars} ariaLabel="Sets per week" formatY={(v) => trimNumber(v)} />
+            <div className="segmented range">
+              <button
+                className={measure === 'sets' ? 'active' : ''}
+                onClick={() => setMeasure('sets')}
+              >
+                Sets
+              </button>
+              <button
+                className={measure === 'volume' ? 'active' : ''}
+                onClick={() => setMeasure('volume')}
+              >
+                Tonnage ({unit})
+              </button>
+            </div>
+            <BarChart
+              bars={bars}
+              ariaLabel={measure === 'sets' ? 'Sets per week' : 'Tonnage per week'}
+              formatY={(v) =>
+                measure === 'sets' ? trimNumber(v) : Math.round(v).toLocaleString('en-US')
+              }
+            />
           </section>
           {trained.length === 0 ? (
             <p className="empty">No training logged in this period.</p>
