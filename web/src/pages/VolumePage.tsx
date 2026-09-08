@@ -92,6 +92,7 @@ export default function VolumePage() {
             <BarChart
               bars={bars}
               ariaLabel={measure === 'sets' ? 'Sets per week' : 'Tonnage per week'}
+              band={measure === 'sets' && muscle ? [10, 20] : undefined}
               formatY={(v) =>
                 measure === 'sets' ? trimNumber(v) : Math.round(v).toLocaleString('en-US')
               }

@@ -26,3 +26,14 @@ describe('BarChart', () => {
     expect(screen.getByText('No data yet.')).toBeInTheDocument();
   });
 });
+
+describe('BarChart target band', () => {
+  it('draws the band and keeps it in view', () => {
+    const { container } = render(
+      <BarChart ariaLabel="sets" band={[10, 20]} bars={[{ label: 'W1', value: 4 }]} />,
+    );
+    const band = container.querySelector('rect.band');
+    expect(band).not.toBeNull();
+    expect(band?.querySelector('title')?.textContent).toBe('Target: 10–20');
+  });
+});

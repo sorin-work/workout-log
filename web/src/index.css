@@ -935,3 +935,7 @@ table.heat th:first-child {
 .version {
   margin-top: 2rem;
 }
+
+.chart .band {
+  fill: var(--success-bg);
+}

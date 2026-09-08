@@ -11,14 +11,16 @@ interface Props {
   height?: number;
   formatY?(v: number): string;
   ariaLabel: string;
+  /** Optional shaded target range, e.g. 10-20 sets a week. */
+  band?: [number, number];
 }
 
 const W = 640;
 const PAD = { top: 12, right: 8, bottom: 28, left: 40 };
 
-export function BarChart({ bars, height = 200, formatY = String, ariaLabel }: Props) {
+export function BarChart({ bars, height = 200, formatY = String, ariaLabel, band }: Props) {
   if (bars.length === 0) return <p className="muted">No data yet.</p>;
-  const max = Math.max(0, ...bars.map((b) => b.value));
+  const max = Math.max(0, band?.[1] ?? 0, ...bars.map((b) => b.value));
   const ticks = niceTicks(0, max || 1, 4);
   const top = Math.max(ticks[ticks.length - 1], max);
   const y = linearScale(0, top, height - PAD.bottom, PAD.top);
@@ -28,6 +30,19 @@ export function BarChart({ bars, height = 200, formatY = String, ariaLabel }: Pr
 
   return (
     <svg className="chart" viewBox={`0 0 ${W} ${height}`} role="img" aria-label={ariaLabel}>
+      {band && (
+        <rect
+          x={PAD.left}
+          width={W - PAD.left - PAD.right}
+          y={y(band[1])}
+          height={y(band[0]) - y(band[1])}
+          className="band"
+        >
+          <title>
+            Target: {formatY(band[0])}–{formatY(band[1])}
+          </title>
+        </rect>
+      )}
       {ticks.map((t) => (
         <g key={t}>
           <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} className="grid-line" />
