@@ -73,6 +73,7 @@ func NewServer(st *store.Store, opts Options) *Server {
 			r.Get("/stats/summary", s.handleSummary)
 			r.Get("/stats/calendar", s.handleCalendar)
 			r.Get("/export/sets.csv", s.handleExportSets)
+			r.Post("/import/sets.csv", s.handleImportSets)
 		})
 
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
