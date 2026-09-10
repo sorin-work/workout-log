@@ -3,6 +3,7 @@ import { ApiError, errorMessage, put } from '../api/client';
 import type { User } from '../api/types';
 import { useAuth } from '../auth/context';
 import { FieldError } from '../components/FieldError';
+import { ImportCsv } from '../components/ImportCsv';
 import { useFetch } from '../lib/useFetch';
 import { DeleteAccount } from '../components/DeleteAccount';
 import { PasswordForm } from '../components/PasswordForm';
@@ -96,10 +97,14 @@ export default function SettingsPage() {
       </form>
       <div className="card narrow export">
         <h2>Your data</h2>
-        <p className="muted">Download every set you have logged as a CSV file (weights in kg).</p>
+        <p className="muted">
+          Download every set you have logged as a CSV file (weights in kg), or import one in the
+          same format. Workouts already in your log are skipped.
+        </p>
         <a className="btn" href="/api/export/sets.csv" download>
           Export CSV
         </a>
+        <ImportCsv />
       </div>
       <PasswordForm />
       <DeleteAccount />

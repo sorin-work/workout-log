@@ -939,3 +939,14 @@ table.heat th:first-child {
 .chart .band {
   fill: var(--success-bg);
 }
+
+.file-btn {
+  display: inline-block;
+  margin: 0.5rem 0;
+  font-weight: 400;
+}
+
+.export .actions,
+.export {
+  gap: 0.5rem;
+}
