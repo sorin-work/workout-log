@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/sorin-work/workout-log/internal/store"
@@ -60,6 +61,18 @@ func (r response) decode(t *testing.T, dst any) {
 	if err := json.Unmarshal(r.Body, dst); err != nil {
 		t.Fatalf("decode %s: %v", r.Body, err)
 	}
+}
+
+// upload posts a raw body with a content type, e.g. a CSV file.
+func (c *client) upload(path, contentType, body string) response {
+	c.t.Helper()
+	res, err := c.http.Post(c.base+path, contentType, strings.NewReader(body))
+	if err != nil {
+		c.t.Fatal(err)
+	}
+	defer res.Body.Close()
+	b, _ := io.ReadAll(res.Body)
+	return response{Status: res.StatusCode, Body: b}
 }
 
 func (c *client) do(method, path string, body any) response {
