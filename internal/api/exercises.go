@@ -224,3 +224,19 @@ func (s *Server) handlePutExerciseNotes(w http.ResponseWriter, r *http.Request) 
 	}
 	writeJSON(w, http.StatusOK, req)
 }
+
+func (s *Server) handleDeleteExercise(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r, "id")
+	if !ok || !s.ownsExercise(w, r, id) {
+		return
+	}
+	err := s.store.DeleteExercise(r.Context(), currentUser(r.Context()).ID, id)
+	switch {
+	case errors.Is(err, store.ErrInUse):
+		writeError(w, http.StatusConflict, "in_use", "This exercise has history. Archive it instead.")
+	case err != nil:
+		writeStoreError(w, r, err, "Exercise")
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}

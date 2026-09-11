@@ -15,6 +15,7 @@ func (s *Server) exerciseRoutes(r chi.Router) {
 	r.Route("/{id}", func(r chi.Router) {
 		r.Get("/", s.handleGetExercise)
 		r.Put("/", s.handleUpdateExercise)
+		r.Delete("/", s.handleDeleteExercise)
 		r.Post("/archive", s.handleArchiveExercise(true))
 		r.Post("/restore", s.handleArchiveExercise(false))
 		r.Get("/records", s.handleExerciseRecords)

@@ -218,3 +218,18 @@ func TestExercisesSortedByUse(t *testing.T) {
 		t.Fatalf("the rest should stay alphabetical: %s, %s", list[2].Name, list[3].Name)
 	}
 }
+
+func TestDeleteUnusedExercise(t *testing.T) {
+	a := newTestAPI(t)
+	c := a.signup("ex@example.com")
+	unused := createExercise(t, c, "Typo Pres", "chest")
+	used := createExercise(t, c, "Belt Squat", "quads")
+	w := createWorkout(t, c, "Legs", time.Now())
+	addSet(t, c, w.ID, used.ID, 10, 80, true)
+
+	c.mustDo(http.MethodDelete, fmt.Sprintf("/api/exercises/%d", unused.ID), nil, http.StatusNoContent, nil)
+	c.mustDo(http.MethodGet, fmt.Sprintf("/api/exercises/%d", unused.ID), nil, http.StatusNotFound, nil)
+	c.mustDo(http.MethodDelete, fmt.Sprintf("/api/exercises/%d", used.ID), nil, http.StatusConflict, nil)
+	bench := exerciseID(t, c, "Bench Press")
+	c.mustDo(http.MethodDelete, fmt.Sprintf("/api/exercises/%d", bench), nil, http.StatusForbidden, nil)
+}

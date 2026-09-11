@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 )
@@ -180,4 +181,28 @@ func (s *Store) SetExerciseNotes(ctx context.Context, userID, exerciseID int64, 
 		ON CONFLICT (user_id, exercise_id) DO UPDATE SET notes = excluded.notes, updated_at = now()`,
 		userID, exerciseID, notes)
 	return err
+}
+
+// ErrInUse is returned when deleting an exercise that has history.
+var ErrInUse = errors.New("in use")
+
+// DeleteExercise removes a custom exercise that was never logged or used in
+// a template. Exercises with history should be archived instead.
+func (s *Store) DeleteExercise(ctx context.Context, userID, id int64) error {
+	var used bool
+	if err := s.pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM workout_sets WHERE exercise_id = $1)
+		OR EXISTS (SELECT 1 FROM template_exercises WHERE exercise_id = $1)`, id).Scan(&used); err != nil {
+		return err
+	}
+	if used {
+		return ErrInUse
+	}
+	tag, err := s.pool.Exec(ctx, `DELETE FROM exercises WHERE id = $1 AND user_id = $2`, id, userID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
