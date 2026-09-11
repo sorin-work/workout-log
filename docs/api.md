@@ -97,3 +97,28 @@ and is rounded to 2.5 kg.
 | GET    | `/stats/summary`   | this week, last week, week streak                     |
 | GET    | `/export/sets.csv` | every set as CSV                                      |
 | GET    | `/health`          | 200 when the database answers, 503 otherwise          |
+
+## CSV export and import
+
+`GET /export/sets.csv` and `POST /import/sets.csv` (body: the file, as
+`text/csv`, at most 5 MB) use the same columns:
+
+| Column      | Example               | Notes                                             |
+| ----------- | --------------------- | ------------------------------------------------- |
+| `date`      | `2026-09-01 18:30:00` | workout start in your time zone                   |
+| `workout`   | `Day A`               |                                                   |
+| `exercise`  | `Back Squat`          | must match an exercise in your library (any case) |
+| `set`       | `2`                   | position in the workout; ignored on import        |
+| `reps`      | `5`                   |                                                   |
+| `weight_kg` | `100`                 | always kilograms                                  |
+| `rpe`       | `8.5`                 | optional                                          |
+| `warmup`    | `false`               | optional, default `false`                         |
+| `completed` | `true`                | optional, default `true`                          |
+
+Rows with the same date and workout name become one finished workout.
+A workout that already exists with the same start and name is skipped, so
+importing the same file twice is harmless. If any line is invalid nothing is
+imported and the 422 response lists the lines (`"line 7": "Unknown exercise
+\"Unicorn Press\". Create it first."`). Text fields starting with `=`, `+`,
+`-` or `@` are exported with a leading `'` so spreadsheets do not run them as
+formulas; the import strips it again.
