@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { errorMessage, post } from '../api/client';
+import { del, errorMessage, post } from '../api/client';
 import { MUSCLE_GROUPS, EQUIPMENT, type Exercise } from '../api/types';
 import { ExerciseForm } from '../components/ExerciseForm';
 import { Skeleton } from '../components/Skeleton';
@@ -29,6 +29,17 @@ export default function ExercisesPage() {
     setActionError('');
     try {
       await post(`/exercises/${e.id}/${archived ? 'archive' : 'restore'}`);
+      reload();
+    } catch (err) {
+      setActionError(errorMessage(err));
+    }
+  }
+
+  async function remove(e: Exercise) {
+    if (!window.confirm(`Delete ${e.name}?`)) return;
+    setActionError('');
+    try {
+      await del(`/exercises/${e.id}`);
       reload();
     } catch (err) {
       setActionError(errorMessage(err));
@@ -125,6 +136,14 @@ export default function ExercisesPage() {
                     </button>
                     <button className="btn small" onClick={() => setArchived(e, !e.archivedAt)}>
                       {e.archivedAt ? 'Restore' : 'Archive'}
+                    </button>
+                    <button
+                      className="icon-btn"
+                      aria-label={`Delete ${e.name}`}
+                      title="Delete (only exercises you never logged)"
+                      onClick={() => remove(e)}
+                    >
+                      ×
                     </button>
                   </>
                 )}
