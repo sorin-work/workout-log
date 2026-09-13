@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import type { WorkoutSet } from '../api/types';
 import { fromKg, toKg, trimNumber, type Unit } from '../lib/units';
 
@@ -61,6 +61,13 @@ export function SetRow({ set, index, unit, onChange, onDelete }: Props) {
     }
   }
 
+  // Enter in any field saves the set and ticks it off.
+  function onEnter(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    commit({ completed: true });
+  }
+
   return (
     <tr className={set.completed ? 'set done' : 'set'}>
       <td>
@@ -79,6 +86,7 @@ export function SetRow({ set, index, unit, onChange, onDelete }: Props) {
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
           onBlur={() => commit()}
+          onKeyDown={onEnter}
         />
       </td>
       <td>
@@ -88,6 +96,7 @@ export function SetRow({ set, index, unit, onChange, onDelete }: Props) {
           value={reps}
           onChange={(e) => setReps(e.target.value)}
           onBlur={() => commit()}
+          onKeyDown={onEnter}
         />
       </td>
       <td>
@@ -98,6 +107,7 @@ export function SetRow({ set, index, unit, onChange, onDelete }: Props) {
           value={rpe}
           onChange={(e) => setRpe(e.target.value)}
           onBlur={() => commit()}
+          onKeyDown={onEnter}
         />
       </td>
       <td>

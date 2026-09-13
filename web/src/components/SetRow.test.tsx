@@ -89,3 +89,13 @@ describe('SetRow after saving', () => {
     expect(screen.getByLabelText('Reps')).toHaveValue('3');
   });
 });
+
+describe('SetRow keyboard', () => {
+  it('ticks the set off with Enter', async () => {
+    const user = userEvent.setup();
+    const onChange = renderRow(base);
+    await user.click(screen.getByLabelText('Reps'));
+    await user.keyboard('{Backspace}6{Enter}');
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ reps: 6, completed: true }));
+  });
+});
