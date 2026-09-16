@@ -13,6 +13,7 @@ import { WorkoutDetailsForm } from '../components/WorkoutDetailsForm';
 import { WorkoutNotes } from '../components/WorkoutNotes';
 import { formatDate, formatDuration, formatTime } from '../lib/format';
 import { groupSets } from '../lib/groupSets';
+import { restOverAlert } from '../lib/alert';
 import { estimateOneRepMax } from '../lib/e1rm';
 import { formatWeight, fromKg } from '../lib/units';
 import { useAuth } from '../auth/context';
@@ -287,6 +288,7 @@ export default function WorkoutPage() {
           key={restStart}
           startedAt={restStart}
           seconds={restSeconds}
+          onDone={restOverAlert}
           onDismiss={() => setRestStart(null)}
         />
       )}
