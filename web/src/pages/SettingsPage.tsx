@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { ApiError, errorMessage, put } from '../api/client';
+import { ApiError, errorMessage, post, put } from '../api/client';
 import type { User } from '../api/types';
 import { useAuth } from '../auth/context';
 import { FieldError } from '../components/FieldError';
@@ -107,6 +107,7 @@ export default function SettingsPage() {
         <ImportCsv />
       </div>
       <PasswordForm />
+      <OtherDevices />
       <DeleteAccount />
       <AppVersion />
     </>
@@ -117,4 +118,35 @@ function AppVersion() {
   const { data } = useFetch<{ version: string }>('/version');
   if (!data) return null;
   return <p className="muted small center version">Workout Log {data.version}</p>;
+}
+
+function OtherDevices() {
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  async function logoutOthers() {
+    setError('');
+    try {
+      const res = await post<{ loggedOut: number }>('/me/logout-others');
+      setMessage(
+        res.loggedOut === 0
+          ? 'No other devices were logged in.'
+          : `Logged out ${res.loggedOut} other session${res.loggedOut === 1 ? '' : 's'}.`,
+      );
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  return (
+    <div className="card narrow export">
+      <h2>Devices</h2>
+      <p className="muted">Lost a phone or used a gym computer? End every session but this one.</p>
+      {message && <p className="success">{message}</p>}
+      {error && <p className="alert">{error}</p>}
+      <button className="btn" onClick={logoutOthers}>
+        Log out other devices
+      </button>
+    </div>
+  );
 }
