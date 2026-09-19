@@ -33,3 +33,10 @@ func (s *Store) DeleteExpiredSessions(ctx context.Context) (int64, error) {
 	tag, err := s.pool.Exec(ctx, `DELETE FROM sessions WHERE expires_at <= now()`)
 	return tag.RowsAffected(), err
 }
+
+// DeleteOtherSessions ends every session of the user except keepTokenHash
+// and returns how many were removed.
+func (s *Store) DeleteOtherSessions(ctx context.Context, userID int64, keepTokenHash []byte) (int64, error) {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM sessions WHERE user_id = $1 AND token_hash <> $2`, userID, keepTokenHash)
+	return tag.RowsAffected(), err
+}

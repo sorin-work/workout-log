@@ -80,3 +80,19 @@ func TestMeRequiresSession(t *testing.T) {
 	a := newTestAPI(t)
 	a.client().mustDo(http.MethodGet, "/api/me", nil, http.StatusUnauthorized, nil)
 }
+
+func TestLogoutOtherDevices(t *testing.T) {
+	a := newTestAPI(t)
+	phone := a.signup("multi@example.com")
+	laptop := a.client()
+	laptop.mustDo(http.MethodPost, "/api/auth/login", map[string]any{
+		"email": "multi@example.com", "password": "password123",
+	}, http.StatusOK, nil)
+	var res map[string]int
+	phone.mustDo(http.MethodPost, "/api/me/logout-others", nil, http.StatusOK, &res)
+	if res["loggedOut"] != 1 {
+		t.Fatalf("result: %v", res)
+	}
+	phone.mustDo(http.MethodGet, "/api/me", nil, http.StatusOK, nil)
+	laptop.mustDo(http.MethodGet, "/api/me", nil, http.StatusUnauthorized, nil)
+}

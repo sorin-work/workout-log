@@ -152,3 +152,13 @@ func (s *Server) requireUser(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userKey, u)))
 	})
 }
+
+func (s *Server) handleLogoutOthers(w http.ResponseWriter, r *http.Request) {
+	c, _ := r.Cookie(sessionCookie)
+	n, err := s.store.DeleteOtherSessions(r.Context(), currentUser(r.Context()).ID, auth.HashToken(c.Value))
+	if err != nil {
+		writeInternal(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int64{"loggedOut": n})
+}

@@ -7,6 +7,7 @@ func (s *Server) profileRoutes(r chi.Router) {
 	r.Put("/", s.handleUpdateProfile)
 	r.Delete("/", s.handleDeleteAccount)
 	r.Put("/password", s.handleChangePassword)
+	r.Post("/logout-others", s.handleLogoutOthers)
 }
 
 func (s *Server) exerciseRoutes(r chi.Router) {
