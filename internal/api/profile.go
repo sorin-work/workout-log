@@ -112,9 +112,6 @@ func (s *Server) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, r, err)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name: sessionCookie, Value: "", Path: "/", MaxAge: -1,
-		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: s.opts.SecureCookies,
-	})
+	s.clearSessionCookie(w)
 	w.WriteHeader(http.StatusNoContent)
 }

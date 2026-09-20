@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/mail"
 	"strings"
+	"time"
 
 	"github.com/sorin-work/workout-log/internal/auth"
 	"github.com/sorin-work/workout-log/internal/store"
@@ -105,10 +106,7 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name: sessionCookie, Value: "", Path: "/", MaxAge: -1,
-		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: s.opts.SecureCookies,
-	})
+	s.clearSessionCookie(w)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -125,10 +123,7 @@ func (s *Server) startSession(w http.ResponseWriter, r *http.Request, userID int
 	if err := s.store.CreateSession(r.Context(), hash, userID, expires); err != nil {
 		return err
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name: sessionCookie, Value: token, Path: "/", Expires: expires,
-		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: s.opts.SecureCookies,
-	})
+	http.SetCookie(w, s.sessionCookie(token, expires))
 	return nil
 }
 
@@ -161,4 +156,24 @@ func (s *Server) handleLogoutOthers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]int64{"loggedOut": n})
+}
+
+// sessionCookie builds the session cookie with the same attributes for
+// setting and clearing it; browsers only replace a cookie when they match.
+func (s *Server) sessionCookie(value string, expires time.Time) *http.Cookie {
+	return &http.Cookie{
+		Name:     sessionCookie,
+		Value:    value,
+		Path:     "/",
+		Expires:  expires,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   s.opts.SecureCookies,
+	}
+}
+
+func (s *Server) clearSessionCookie(w http.ResponseWriter) {
+	c := s.sessionCookie("", time.Unix(0, 0))
+	c.MaxAge = -1
+	http.SetCookie(w, c)
 }
