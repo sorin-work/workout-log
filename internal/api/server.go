@@ -49,6 +49,8 @@ func NewServer(st *store.Store, opts Options) *Server {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Use(requestLogger)
+		r.Use(middleware.Compress(5, "application/json", "text/csv"))
+		r.Use(noStore)
 		r.Get("/health", s.handleHealth)
 		r.Get("/version", func(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusOK, map[string]string{"version": Version})
@@ -100,4 +102,13 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "database": "ok"})
+}
+
+// noStore keeps browsers and proxies from caching API responses, which hold
+// personal data and change all the time.
+func noStore(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
 }
