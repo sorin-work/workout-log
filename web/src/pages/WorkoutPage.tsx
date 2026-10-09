@@ -14,6 +14,7 @@ import { WorkoutNotes } from '../components/WorkoutNotes';
 import { formatDate, formatDuration, formatTime } from '../lib/format';
 import { groupSets } from '../lib/groupSets';
 import { restOverAlert } from '../lib/alert';
+import { workoutText } from '../lib/shareText';
 import { estimateOneRepMax } from '../lib/e1rm';
 import { formatWeight, fromKg } from '../lib/units';
 import { useAuth } from '../auth/context';
@@ -40,6 +41,7 @@ export default function WorkoutPage() {
   const [plates, setPlates] = useState<number | null>(null);
   const [finished, setFinished] = useState<FinishResult | null>(null);
   const [finishing, setFinishing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState('');
 
   if (loading && !workout) return <p className="muted">Loading…</p>;
@@ -128,6 +130,13 @@ export default function WorkoutPage() {
       navigate(`/workouts/${copy.id}`);
     });
 
+  const copyText = () =>
+    run(async () => {
+      await navigator.clipboard.writeText(workoutText(w, unit));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    });
+
   const remove = () =>
     run(async () => {
       if (!window.confirm('Delete this workout and all of its sets?')) return;
@@ -161,6 +170,9 @@ export default function WorkoutPage() {
         <div className="actions">
           <button className="btn" onClick={() => setEditing(true)}>
             Edit
+          </button>
+          <button className="btn" onClick={copyText}>
+            {copied ? 'Copied' : 'Copy as text'}
           </button>
           {w.finishedAt ? (
             <button className="btn" onClick={repeat}>
