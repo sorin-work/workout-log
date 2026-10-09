@@ -67,6 +67,14 @@ export default function TemplatesPage() {
                       +{formatWeight(e.incrementKg, unit)}
                     </span>
                   )}
+                  {e.failures > 0 && (
+                    <span
+                      className="badge muted-badge"
+                      title={`Missed ${e.failures} session(s) in a row at this weight`}
+                    >
+                      {e.failures}/{e.deloadAfter || '∞'} missed
+                    </span>
+                  )}
                 </li>
               ))}
               {t.exercises.length === 0 && <li className="muted">No exercises yet</li>}
