@@ -7,9 +7,9 @@ import (
 
 func TestHealth(t *testing.T) {
 	a := newTestAPI(t)
-	var body map[string]string
+	var body map[string]any
 	a.client().mustDo(http.MethodGet, "/api/health", nil, http.StatusOK, &body)
-	if body["status"] != "ok" || body["database"] != "ok" {
+	if body["status"] != "ok" || body["database"] != "ok" || body["schemaVersion"].(float64) < 10 {
 		t.Fatalf("body = %v", body)
 	}
 }

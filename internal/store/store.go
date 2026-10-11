@@ -47,3 +47,10 @@ func itoa(n int) string { return strconv.Itoa(n) }
 func (s *Store) Ping(ctx context.Context) error {
 	return s.pool.Ping(ctx)
 }
+
+// SchemaVersion returns the newest applied migration.
+func (s *Store) SchemaVersion(ctx context.Context) (int64, error) {
+	var v int64
+	err := s.pool.QueryRow(ctx, `SELECT coalesce(max(version_id), 0) FROM goose_db_version WHERE is_applied`).Scan(&v)
+	return v, err
+}

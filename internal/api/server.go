@@ -98,10 +98,14 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	if err := s.store.Ping(ctx); err != nil {
 		slog.Warn("health check failed", "err", err)
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "unavailable", "database": "down"})
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"status": "unavailable", "database": "down"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "database": "ok"})
+	version, err := s.store.SchemaVersion(ctx)
+	if err != nil {
+		slog.Warn("read schema version", "err", err)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "database": "ok", "schemaVersion": version})
 }
 
 // noStore keeps browsers and proxies from caching API responses, which hold
