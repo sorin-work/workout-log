@@ -22,7 +22,7 @@ export function ExercisePicker({ onPick, onCancel }: Props) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        <button className="btn" onClick={onCancel}>
+        <button type="button" className="btn" onClick={onCancel}>
           Cancel
         </button>
       </div>
@@ -31,7 +31,7 @@ export function ExercisePicker({ onPick, onCancel }: Props) {
       <ul className="list picker-list">
         {data?.map((e) => (
           <li key={e.id}>
-            <button className="picker-item" onClick={() => onPick(e)}>
+            <button type="button" className="picker-item" onClick={() => onPick(e)}>
               {e.name}
               <span className="muted small">{e.primaryMuscle}</span>
             </button>
