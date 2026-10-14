@@ -103,31 +103,33 @@ export default function VolumePage() {
           ) : (
             <section className="card">
               <h2>By muscle group</h2>
-              <table className="table heat">
-                <thead>
-                  <tr>
-                    <th>Muscle</th>
-                    {data.map((w) => (
-                      <th key={w.weekStart}>{weekLabel(w.weekStart)}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {trained.map((m) => (
-                    <tr key={m}>
-                      <td>{capitalize(m)}</td>
-                      {data.map((w) => {
-                        const sets = w.muscles[m]?.sets ?? 0;
-                        return (
-                          <td key={w.weekStart} style={{ background: heat(sets) }}>
-                            {sets > 0 ? trimNumber(sets) : ''}
-                          </td>
-                        );
-                      })}
+              <div className="scroll-x">
+                <table className="table heat">
+                  <thead>
+                    <tr>
+                      <th>Muscle</th>
+                      {data.map((w) => (
+                        <th key={w.weekStart}>{weekLabel(w.weekStart)}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {trained.map((m) => (
+                      <tr key={m}>
+                        <td>{capitalize(m)}</td>
+                        {data.map((w) => {
+                          const sets = w.muscles[m]?.sets ?? 0;
+                          return (
+                            <td key={w.weekStart} style={{ background: heat(sets) }}>
+                              {sets > 0 ? trimNumber(sets) : ''}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
         </>

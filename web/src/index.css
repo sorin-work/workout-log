@@ -950,3 +950,15 @@ table.heat th:first-child {
 .export {
   gap: 0.5rem;
 }
+
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table.heat td:first-child,
+table.heat th:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+}
