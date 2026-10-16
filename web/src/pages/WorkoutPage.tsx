@@ -45,7 +45,15 @@ export default function WorkoutPage() {
   const [actionError, setActionError] = useState('');
 
   if (loading && !workout) return <p className="muted">Loading…</p>;
-  if (error && !workout) return <p className="alert">{error}</p>;
+  if (error && !workout) {
+    return (
+      <div className="empty">
+        <h1>Workout not found</h1>
+        <p>It may have been deleted, or the link is wrong.</p>
+        <Link to="/workouts">Back to your workouts</Link>
+      </div>
+    );
+  }
   if (!workout) return null;
   const w = workout;
 

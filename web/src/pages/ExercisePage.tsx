@@ -36,7 +36,14 @@ export default function ExercisePage() {
   const progress = useFetch<ProgressPoint[]>(`/exercises/${id}/progress`);
   const history = useFetch<LastSession[]>(`/exercises/${id}/history?limit=8`);
 
-  if (exercise.error) return <p className="alert">{exercise.error}</p>;
+  if (exercise.error) {
+    return (
+      <div className="empty">
+        <h1>Exercise not found</h1>
+        <Link to="/exercises">Back to the library</Link>
+      </div>
+    );
+  }
   if (!exercise.data) return <p className="muted">Loading…</p>;
   const e = exercise.data;
   const r = records.data;
