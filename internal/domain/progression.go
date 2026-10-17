@@ -1,5 +1,7 @@
 package domain
 
+import "slices"
+
 // ProgressionRule describes linear progression for one exercise in a
 // template: add IncrementKg after a successful session, and after
 // DeloadAfter failed sessions in a row drop the weight by DeloadPercent.
@@ -39,7 +41,7 @@ type Target struct {
 func SessionSucceeded(target Target, weightKg float64, sets []SetInput) bool {
 	hit := 0
 	for _, s := range sets {
-		if s.Warmup || !s.Completed {
+		if !s.Working() {
 			continue
 		}
 		if s.Reps >= target.Reps && s.WeightKg >= weightKg-1e-9 {
@@ -52,14 +54,7 @@ func SessionSucceeded(target Target, weightKg float64, sets []SetInput) bool {
 // Progress applies the rule to a finished session and returns the new state.
 // A session without any working sets for the exercise leaves the state alone.
 func Progress(rule ProgressionRule, state ProgressionState, target Target, sets []SetInput) (ProgressionState, Outcome) {
-	worked := false
-	for _, s := range sets {
-		if !s.Warmup && s.Completed {
-			worked = true
-			break
-		}
-	}
-	if !worked {
+	if !slices.ContainsFunc(sets, SetInput.Working) {
 		return state, OutcomeSkipped
 	}
 	if SessionSucceeded(target, state.WeightKg, sets) {

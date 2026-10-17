@@ -19,6 +19,12 @@ type SetInput struct {
 	Warmup    bool
 }
 
+// Working reports whether the set counts as work: completed and not a
+// warm-up. Volume, progression and records only look at working sets.
+func (s SetInput) Working() bool {
+	return s.Completed && !s.Warmup
+}
+
 // ValidateSet checks a set and returns a message per invalid field.
 func ValidateSet(s SetInput) map[string]string {
 	fields := map[string]string{}
@@ -46,7 +52,7 @@ func ValidateSet(s SetInput) map[string]string {
 // SetVolume is the tonnage of a set: reps times weight. Warm-ups and sets
 // that were not completed do not count.
 func SetVolume(s SetInput) float64 {
-	if s.Warmup || !s.Completed {
+	if !s.Working() {
 		return 0
 	}
 	return float64(s.Reps) * s.WeightKg
