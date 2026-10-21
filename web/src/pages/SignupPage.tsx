@@ -39,7 +39,7 @@ export default function SignupPage() {
         {error && <p className="alert">{error}</p>}
         <label>
           Name
-          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          <input autoFocus value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           <FieldError message={fields.displayName} />
         </label>
         <label>
