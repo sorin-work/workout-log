@@ -52,3 +52,30 @@ func TestDemoSeed(t *testing.T) {
 		t.Fatalf("programs: %+v %v", progs, err)
 	}
 }
+
+func TestDemoDataIsConsistent(t *testing.T) {
+	pool := testdb.New(t)
+	ctx := context.Background()
+	now := time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC)
+	if _, err := seed.Demo(ctx, pool, now); err != nil {
+		t.Fatal(err)
+	}
+	checks := map[string]string{
+		"unfinished workouts":        `SELECT count(*) FROM workouts WHERE finished_at IS NULL`,
+		"sets with RPE out of range": `SELECT count(*) FROM workout_sets WHERE rpe < 1 OR rpe > 10`,
+		"weights off the 2.5 kg grid": `SELECT count(*) FROM workout_sets ws JOIN exercises e ON e.id = ws.exercise_id
+			WHERE e.equipment = 'barbell' AND mod(ws.weight_kg * 10, 25) <> 0`,
+		"workouts in the future": `SELECT count(*) FROM workouts WHERE started_at > '2026-10-22 12:00:00+00'`,
+		"gaps in set positions": `SELECT count(*) FROM (SELECT workout_id FROM workout_sets
+			GROUP BY workout_id HAVING max(position) <> count(*)) g`,
+	}
+	for name, q := range checks {
+		var n int
+		if err := pool.QueryRow(ctx, q).Scan(&n); err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if n != 0 {
+			t.Errorf("%s: %d", name, n)
+		}
+	}
+}
