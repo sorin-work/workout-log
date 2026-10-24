@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localMonth } from './WorkoutsPage';
+import { localMonth } from './format';
 
 describe('localMonth', () => {
   it('uses the local calendar month', () => {

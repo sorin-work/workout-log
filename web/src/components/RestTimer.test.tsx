@@ -1,7 +1,8 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { formatClock, RestTimer } from './RestTimer';
+import { formatClock } from '../lib/format';
+import { RestTimer } from './RestTimer';
 
 describe('formatClock', () => {
   it('formats minutes and seconds', () => {

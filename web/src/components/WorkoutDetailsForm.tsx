@@ -1,14 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError, errorMessage, put } from '../api/client';
 import type { Workout } from '../api/types';
+import { toLocalInput } from '../lib/format';
 import { FieldError } from './FieldError';
-
-/** Formats an ISO timestamp for a datetime-local input in local time. */
-export function toLocalInput(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 interface Props {
   workout: Workout;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatClock } from '../lib/format';
 
 interface Props {
   /** Changes every time a new rest period should start. */
@@ -6,11 +7,6 @@ interface Props {
   seconds: number;
   onDone?(): void;
   onDismiss(): void;
-}
-
-export function formatClock(totalSeconds: number): string {
-  const s = Math.max(0, Math.ceil(totalSeconds));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 export function RestTimer({ startedAt, seconds, onDone, onDismiss }: Props) {

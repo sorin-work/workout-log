@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import type { Exercise, Page, WorkoutSummary } from '../api/types';
-import { formatDate, formatDuration } from '../lib/format';
+import { formatDate, formatDuration, localMonth } from '../lib/format';
 import { formatVolume, formatWeight } from '../lib/units';
 import { MonthCalendar } from '../components/MonthCalendar';
 import { Skeleton } from '../components/Skeleton';
 import { useFetch } from '../lib/useFetch';
 import { useUnit } from '../lib/useUnit';
 import { useTitle } from '../lib/useTitle';
-
-/** "2026-07" for the month of d in local time (toISOString would use UTC). */
-export function localMonth(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
 
 export default function WorkoutsPage() {
   useTitle('Workouts');
