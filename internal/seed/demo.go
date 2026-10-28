@@ -229,7 +229,7 @@ func (g *generator) workout(name string, tplID int64, startedAt time.Time, lifts
 		}
 		logged := make([]domain.SetInput, 0, l.sets)
 		// Harder as the weight climbs: the chance of missing reps grows.
-		missChance := 0.04 + st.WeightKg/2500
+		missChance := missChance(l.name, st.WeightKg)
 		for i := 0; i < l.sets; i++ {
 			reps := l.reps
 			if l.startKg == 0 {
@@ -255,6 +255,29 @@ func (g *generator) workout(name string, tplID int64, startedAt time.Time, lifts
 		}
 	}
 	return g.tx.SendBatch(g.ctx, batch).Close()
+}
+
+// strength is roughly where the simulated lifter's five-rep strength tops out
+// for each lift after a year. Linear progression stalls as the weight nears
+// it, which is what produces failed sessions and deloads in the demo.
+var strength = map[string]float64{
+	"Back Squat":     140,
+	"Bench Press":    95,
+	"Barbell Row":    85,
+	"Overhead Press": 62.5,
+	"Deadlift":       170,
+}
+
+// missChance is the chance of missing reps on a set at weight kg: small far
+// from the lifter's limit and climbing steeply close to it.
+func missChance(name string, kg float64) float64 {
+	limit, ok := strength[name]
+	if !ok {
+		return 0.03
+	}
+	x := (kg - 0.7*limit) / (0.3 * limit)
+	x = min(max(x, 0), 1.2)
+	return min(0.03+0.6*x*x, 0.9)
 }
 
 var notes = []string{

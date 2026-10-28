@@ -79,3 +79,36 @@ func TestDemoDataIsConsistent(t *testing.T) {
 		}
 	}
 }
+
+func TestDemoProgressIsBelievable(t *testing.T) {
+	pool := testdb.New(t)
+	ctx := context.Background()
+	if _, err := seed.Demo(ctx, pool, time.Date(2026, 10, 28, 12, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatal(err)
+	}
+	var squat, bench float64
+	var deloads int
+	err := pool.QueryRow(ctx, `SELECT
+			max(ws.weight_kg) FILTER (WHERE e.name = 'Back Squat')::float8,
+			max(ws.weight_kg) FILTER (WHERE e.name = 'Bench Press')::float8
+		FROM workout_sets ws JOIN exercises e ON e.id = ws.exercise_id WHERE NOT ws.warmup`).Scan(&squat, &bench)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if squat < 110 || squat > 160 || bench < 75 || bench > 110 {
+		t.Fatalf("a year of 5x5 got squat to %v and bench to %v", squat, bench)
+	}
+	// The squat should have stalled and deloaded at least once.
+	err = pool.QueryRow(ctx, `SELECT count(*) FROM (
+			SELECT ws.weight_kg, lag(ws.weight_kg) OVER (ORDER BY w.started_at) AS prev
+			FROM workout_sets ws JOIN workouts w ON w.id = ws.workout_id JOIN exercises e ON e.id = ws.exercise_id
+			WHERE e.name = 'Back Squat' AND NOT ws.warmup AND ws.position = (
+				SELECT min(x.position) FROM workout_sets x WHERE x.workout_id = w.id AND x.exercise_id = e.id AND NOT x.warmup)
+		) s WHERE weight_kg < prev`).Scan(&deloads)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if deloads == 0 {
+		t.Fatal("no deloads in a year of squatting")
+	}
+}
