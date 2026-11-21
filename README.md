@@ -145,6 +145,7 @@ docs/              API reference and architecture notes
 
 See [docs/api.md](docs/api.md) for the endpoints and
 [docs/architecture.md](docs/architecture.md) for how it fits together.
+Ideas for what could come next are in [ROADMAP.md](ROADMAP.md).
 
 ## License
 
