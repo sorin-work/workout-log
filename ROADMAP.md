@@ -209,3 +209,435 @@ not templates, programs or notes (item 22).
   restored database. Stop `app` first.
 - Tests: none in Go. A CI step that dumps and restores the test database in
   the `api` job would prove the commands.
+
+## Later
+
+### 6. Workouts closed for you
+
+On startup and then periodically, `main.go` calls `CloseStaleWorkouts` with
+12 hours: workouts left open that long are finished at the time of their last
+set. The comment says progression is not applied to these. Forgetting to tap
+"Finish" after a good session therefore means the targets silently stay where
+they were, and next time the app asks for the same weight again without
+saying why.
+
+- Mark such workouts: `auto_closed BOOLEAN` on `workouts`, set by
+  `CloseStaleWorkouts`.
+- The home page and the workout page show "This workout was closed for you.
+  Apply progression?" with the changes it would make, computed with the same
+  `domain.Progress` without writing.
+- Applying uses the same path as a normal finish, guarded so it happens once,
+  and records its changes in item 3's table, so it can be undone.
+- Only for the latest workout of that template: if a newer one was finished
+  since, applying the older one would progress from stale targets. Offer it
+  only when nothing newer exists.
+- Depends on item 3 for the change records.
+- Tests: `internal/store/workouts_test.go` marks auto-closed workouts; an API
+  test applies progression once and refuses when a newer workout exists.
+
+### 7. Rep ranges and double progression
+
+A template exercise has a fixed `reps` target and progression adds weight
+when every set hits it. Most programs after the beginner stage use a range
+instead ("3x8-12"): add reps each session at the same weight, and add weight
+once every set reaches the top of the range, dropping back to the bottom.
+
+- Data: `reps_max` on `template_exercises`, nullable. When set, `reps` is
+  the bottom of the range.
+- `domain.Progress` gets a second mode: success means every working set
+  reached `reps_max`; then the weight goes up by the increment and the target
+  reps go back to `reps`. Otherwise the target reps for next time are the
+  lowest reps achieved plus one, capped at `reps_max`. Failures and deloads
+  count sessions below the bottom of the range.
+- The template editor shows "8-12"; the workout page shows the current rep
+  target and the range.
+- `SessionSucceeded` stays for fixed targets; the new rule lives next to it,
+  with a `ProgressionState` that also remembers the current rep target
+  (`target_reps` on the row).
+- Tests: `internal/domain/progression_test.go` for a series of sessions
+  climbing a range, the reset after a weight increase, and a deload.
+
+### 8. Different targets per set
+
+Every set of an exercise in a template has the same reps and weight
+(`template_exercises.sets`, `reps`, `weight_kg`). Common structures cannot be
+written down: a top set and back-off sets, pyramids, a last set "as many reps
+as possible", or 5/3/1's 65/75/85% sets.
+
+- Data: `template_sets` (`template_exercise_id`, `position`, `reps`,
+  `weight_kg` or `percent` of the exercise's working weight, `amrap`). An
+  exercise without rows keeps the current "N x reps at weight" behaviour, so
+  old templates need no migration of their data.
+- Starting a workout from the template (`handleStartTemplate`) creates the
+  sets from these rows.
+- Progression keeps working on the exercise's working weight; the per-set
+  weights follow from their percentages. `SessionSucceeded` compares each
+  logged set with its own target, and an AMRAP set counts as hit at its
+  minimum reps.
+- The editor in `TemplateEditPage.tsx` gets an "Edit sets" mode per exercise;
+  the plain mode stays the default.
+- Tricky: percentages of what? Of the template's working weight here; item 9
+  adds a training max. Keep the field name generic (`percent`) and the base
+  explicit (`percent_of`).
+- Tests: `internal/domain` tests for success with mixed targets and AMRAP;
+  API test for starting a workout with per-set targets.
+
+### 9. Percentage programs from a training max
+
+Popular intermediate programs (5/3/1, GZCLP's later stages, many powerlifting
+blocks) are written as percentages of a training max that is raised every
+cycle, not as a weight that goes up after each good session.
+
+- Data: `training_maxes` (`user_id`, `exercise_id`, `weight_kg`,
+  `updated_at`) and, on `programs`, a `cycle_weeks` and a list of weeks, each
+  pointing at templates whose sets use `percent_of = 'training_max'`
+  (item 8).
+- After the last week of a cycle, the program raises each training max by its
+  increment (the same `increment_kg` column), and the finish screen says so.
+- "Set training max" from the exercise page: type it, or take 90% of the
+  current estimated max (`EstimateOneRepMax`).
+- Ship one built-in program definition (5/3/1 with its standard weeks) as a
+  template that users copy, like the demo's 5x5, so nobody has to type the
+  percentages.
+- Depends on item 8.
+- Tricky: programs today are a rotation with `next_position`. A cycle with
+  weeks is a second kind of program; keep both and make the difference
+  visible in `ProgramsPage.tsx`.
+- Tests: `internal/domain` tests for the set weights of each week rounded to
+  loadable weights, and the training max raise at the end of a cycle.
+
+### 10. RPE targets
+
+Sets record an RPE, and that is all it does: the estimated max ignores it, and
+templates cannot ask for "a single at RPE 8, then 3x5 at 85% of it".
+
+- An RPE-based estimate in `internal/domain/e1rm.go`: the usual reps-in-reserve
+  table (reps plus 10 minus RPE as effective reps, for RPE 6 to 10), used when
+  the set has an RPE and the user chose it as a third formula.
+- Per-set targets from item 8 get an optional `rpe`. The workout page shows
+  "@8" next to the target, and the weight suggestion for back-off sets is
+  computed from the logged top set.
+- Progression for RPE sets: none automatic. The user picks the weight; the app
+  only suggests. That keeps `domain.Progress` untouched.
+- Depends on item 8.
+- Tests: `e1rm_test.go` for the RPE table, including RPE missing and RPE
+  below 6 (not used).
+
+### 11. Timed and distance sets
+
+The library has "Plank" and "Hanging Leg Raise", and people do loaded carries
+and sled pushes, but a set is only reps and weight (`workout_sets.reps` and
+`weight_kg`). A plank is logged as "1 rep" or as seconds in the reps field,
+and records then call 60 seconds "60 reps".
+
+- Data: `measure` on `exercises` (`reps`, `time`, `distance`) and
+  `duration_seconds` and `distance_m` on `workout_sets` and
+  `template_exercises`, nullable.
+- The set row (`SetRow.tsx`) shows the right fields for the exercise; the rest
+  timer can count a timed set down.
+- Records for timed exercises: longest hold, and heaviest for a given time.
+  `ComputeRecords` skips non-rep exercises today only because `Reps <= 0`; make
+  that explicit.
+- Weekly volume counts sets for every kind, tonnage only for rep sets.
+- Built-in exercises: set `Plank` to `time`; add a farmer's carry as
+  `distance`.
+- Tests: domain tests for records per measure; API validation of the fields
+  per measure.
+
+### 12. Body weight and weighted bodyweight lifts
+
+Pull-ups, chin-ups and dips are in the library as `bodyweight` equipment, and
+their weight is whatever was typed: 0 for body weight, or the added weight on
+a belt. Their estimated max and tonnage are then meaningless, and a lighter
+lifter's 10 pull-ups look like nothing.
+
+- A small body weight log (`body_weights`: `user_id`, `measured_on`,
+  `weight_kg`), entered on the home page or at the start of a workout. Not a
+  health tracker: one number, used for the lifts.
+- For exercises with `bodyweight` equipment, the logged `weight_kg` means
+  added weight. Records, estimated maxes and tonnage use body weight on that
+  date plus the added weight, labelled as such.
+- Assisted variations (band or machine) as negative added weight, if it comes
+  for free; otherwise later.
+- Tricky: no body weight logged. Fall back to the added weight only, as
+  today, and say "add your body weight for better numbers".
+- Tests: domain tests for effective load with and without a body weight;
+  records for a weighted pull-up.
+
+### 13. Supersets and circuits
+
+Exercises in a workout are a flat ordered list of sets (`position`).
+Alternating two exercises with one rest, or a circuit of four, works by
+remembering the order, and the rest timer starts after every set.
+
+- Data: `group_key` on `template_exercises` and `workout_sets` (a small int,
+  null for none). Exercises with the same key form a superset.
+- The workout page shows grouped exercises together and moves through them
+  round by round; the rest timer runs after the last exercise of a round
+  only.
+- `groupSets.ts` in `web/src/lib` already groups sets by exercise; the
+  grouping by superset goes there too, with specs.
+- Reordering (`handleReorderSets`) keeps groups together.
+- Tests: `groupSets.test.ts` for rounds; API test for starting a template
+  with a superset.
+
+### 14. One side at a time
+
+Bulgarian split squats, one-arm rows and walking lunges are logged as one set,
+so it is not clear whether 10 reps means each side or in total.
+
+- `unilateral` on `exercises` (set for the built-ins that are one-sided).
+- Logging: reps are per side; the workout page says so. Optionally log left
+  and right separately when they differ (`reps_left`, `reps_right`), shown
+  only when the user expands the row.
+- Volume and tonnage count both sides.
+- Tests: domain test for tonnage of a unilateral set.
+
+### 15. Your own bar and plates
+
+The plate calculator uses a fixed 20 kg or 45 lb bar and a fixed plate set
+(`BAR_WEIGHT` and `PLATES` in `web/src/lib/plates.ts`), and progression rounds
+to 2.5 kg or 5 lb (`SmallestPlateStep`). A home gym with 0.5 kg microplates, a
+15 kg bar, or dumbbells that go up in 2 kg steps gets suggestions it cannot
+load.
+
+- Data: `bar_kg` and `plates_kg` (an array) on `users`, and an optional
+  `increment_step_kg` per exercise for dumbbells and machines.
+- Settings: pick the bar and tick the plates you own.
+- The plate calculator, warm-up suggestions (`internal/domain/warmup.go`) and
+  progression rounding use them; item 2's helper takes the step from here.
+- Tricky: warm-ups are computed on the server and plates on the client. Send
+  the settings with the profile, and keep one rounding rule, in
+  `internal/domain`, mirrored by a spec on the web side.
+- Tests: domain tests for rounding with microplates; `plates.test.ts` for a
+  custom set.
+
+### 16. A rest timer that works in a pocket
+
+The rest timer (`RestTimer.tsx`) beeps and vibrates through `lib/alert.ts`,
+which only works while the page is in the foreground. With the phone locked
+between sets, which is how most people rest, nothing happens.
+
+- Keep the screen on during a workout with the Screen Wake Lock API, as a
+  setting (it costs battery).
+- When the timer is started, ask once for notification permission and
+  schedule a notification at the end. Without a service worker, a
+  notification from a background tab is unreliable; item 27's service worker
+  makes it dependable.
+- Show the remaining time in the tab title, as a fallback that always works.
+- Tests: specs for the title and for the wake lock being requested and
+  released, with the browser APIs mocked.
+
+### 17. Program days on weekdays
+
+A program is a rotation (`program_days` with `next_position`): the next
+workout is whatever comes next, whenever you train. Many people plan by
+weekday ("Monday A, Wednesday B, Friday A"), and the calendar cannot show
+what is planned.
+
+- Optional weekdays on `programs` (a `days` array). With them, "today's
+  workout" on the home page says whether today is a training day, and the
+  calendar (`MonthCalendar.tsx`) shows planned days as outlines.
+- The rotation still decides which template is next; weekdays only decide
+  when. A missed day does not skip a template.
+- The week streak is unchanged.
+- Tests: `internal/domain` test for the next planned date from a weekday set
+  in the user's time zone, including a week boundary.
+
+### 18. Swapping an exercise for a day
+
+When the squat rack is taken, the workout page can add another exercise, but
+the template's squat stays in the workout with no sets, and progression
+counts it as skipped. The replacement does not progress at all.
+
+- "Swap" on an exercise in a workout started from a template: pick another
+  exercise; the planned sets move over with the same reps, and the weight
+  comes from the substitute's last session (the `/last` endpoint already
+  exists).
+- Data: `replaces_exercise_id` on `workout_sets`, so the history shows what
+  was swapped.
+- Progression leaves the original alone (skipped, as now) and does not touch
+  the substitute's template targets, since it has none.
+- Optional per-exercise default substitutes in the exercise notes page.
+- Tests: API test for a swap, progression skipping the original.
+
+### 19. Notes and flags on a set
+
+Workouts have notes and exercises have personal notes, but a single set
+cannot say "belt", "paused", "left knee hurt" or "spotter helped". Those are
+what people look back for when a number looks odd.
+
+- `note` (short text) on `workout_sets`, and a few fixed flags as a small
+  `TEXT[]`: `belt`, `paused`, `assisted`, `pain`.
+- Shown in the history and on the exercise page; records can skip assisted
+  sets.
+- The CSV export and import carry both.
+- Tests: validation of flags; records skip assisted sets.
+
+### 20. Exercise descriptions and links
+
+Built-in exercises have a name, muscles and equipment. A new lifter does not
+know what a Pendlay row is, and custom exercises have nowhere to keep a setup
+cue other than the personal notes.
+
+- `description` and `url` on `exercises`. The built-ins get a short
+  description in the migration (two or three sentences, written here, not
+  copied from elsewhere). Links are the user's own, for custom exercises.
+- No embedded videos and no hosted media: a link opens in a new tab.
+- Tests: API returns and updates the fields; a link must be `https://`.
+
+### 21. Import from other apps
+
+The CSV import (`handleImportSets` in `internal/api/import.go`) reads only the
+app's own export format, with `date`, `workout`, `exercise`, `reps` and
+`weight_kg`. People moving from Strong, Hevy or FitNotes have years of history
+in those apps' CSV exports.
+
+- A `format` parameter and one parser per format in a new
+  `internal/importer` package (pure functions from CSV rows to
+  `(date, workout name, exercise, reps, weight, unit, rpe, note)`), with sample
+  files under `testdata`.
+- Exercise names are matched case-insensitively against the library and
+  custom exercises, as today. Unknown names: a dry run lists them, and the
+  user maps each one to an existing exercise or "create as custom".
+- Units: those apps export in the user's unit; the importer converts to
+  kilograms with `ToKg`.
+- The existing duplicate rule (same start time and name skipped) stays, so
+  importing twice is safe.
+- Tricky: time zones. Strong exports local times without an offset; read
+  them in the user's time zone, as the current importer does with
+  `userLocation`.
+- Tests: parser tests per format; API test for the mapping step.
+
+### 22. Full account export and restore
+
+The CSV export has every set but no templates, programs, progression state,
+custom exercise details or notes. Moving to another server, or restoring one
+account from a broken database, loses all of that.
+
+- `GET /api/export/account.json`: profile settings, custom exercises,
+  exercise notes, templates with their exercises and progression state,
+  programs with their days and position, and workouts with sets.
+- `POST /api/import/account.json` into an account without data: creates
+  everything, remapping ids, in one transaction.
+- The delete-account dialog (`DeleteAccount.tsx`) offers the export first.
+- Tricky: built-in exercises are referenced by name, not id, so the file
+  works on another server whose ids differ.
+- Tests: an export and import round trip in `internal/api/export_test.go`
+  produces the same records and the same next workout.
+
+### 23. Getting back into a locked account
+
+There is no password reset and no email at all. Someone who forgets their
+password on a self-hosted instance has no way back in, and neither does the
+person who runs it, short of SQL.
+
+- A command: `workout-log reset-password <email>` prints a one-time link
+  (or sets a temporary password) when run inside the container, documented
+  in the README. No email needed.
+- Optional email reset when `SMTP_URL` is set, with a single-use, hashed,
+  one-hour token, using the same `sessions`-style hashing as
+  `internal/auth`. Without SMTP the feature is hidden.
+- Both sign out every session of the user, like "log out other devices" does
+  for others.
+- Tests: the command against a test schema; token single use and expiry.
+
+### 24. Closing sign-up on a private server
+
+`/api/auth/signup` is open to anyone who can reach the server. For a log run
+for one person or a family, that means strangers can create accounts.
+
+- `SIGNUP` setting: `open` (today's default), `invite` or `closed`. With
+  `invite`, a signed-in user can create a one-time invite link in settings.
+- The login page hides "Sign up" when it is closed; the endpoint answers 403.
+- `SEED_DEMO` still works with sign-up closed.
+- Tests: each mode in `internal/api/auth_test.go`, invites used once.
+
+### 25. Record history
+
+The records page shows the current best per exercise, and finishing a workout
+reports new records (`RecordsSetIn`). There is no list of when each record
+was set and by how much it moved, which is the most motivating view in most
+lifting apps.
+
+- Computed, not stored: walk the user's sets in time order and emit each time
+  a record kind improves. A `RecordTimeline` in `internal/domain/records.go`
+  next to `ComputeRecords`.
+- On the exercise page: a list of PRs with dates, and markers on the progress
+  chart.
+- Tests: domain test for a sequence of sets, ties going to the earlier set as
+  `better` already does.
+
+### 26. Comparing training blocks
+
+The progress chart shows one exercise over a time range and the volume page
+shows weekly sets. Comparing "the 12 weeks of this program" with "the 12
+before" (estimated max change, sessions, average sets per week) means reading
+two charts side by side.
+
+- A block is a date range, or the period a program was active (record
+  `activated_at` and `deactivated_at` on `programs` from now on).
+- A page that compares two blocks per exercise: start and end estimated max,
+  best sets, sessions, weekly working sets, using the existing summary and
+  volume code in `internal/domain`.
+- Tests: domain tests for block summaries with gaps and deloads.
+
+### 27. Logging without a signal
+
+Gyms are often in basements. Every set is a request (`/api/workouts/{id}/sets`),
+so logging fails when the signal does, and the rest timer is the only part
+that keeps working.
+
+- A service worker that caches the app shell, and an offline queue in
+  IndexedDB for set changes in the current workout, replayed in order when the
+  connection returns.
+- The workout page works from the local copy and shows "3 changes waiting".
+- Set ids: new sets get a client-generated id so later edits in the queue can
+  refer to them; the API accepts and stores a `client_id` for idempotency, so a
+  replay after a timeout does not create the set twice.
+- Finishing a workout while offline is queued too, but progression and new
+  records are shown only after the server has it.
+- Tricky: the same workout open on two devices, one offline. Last write wins
+  per set, which is acceptable for one person's log.
+- Tests: the queue and replay as a pure module in `web/src/lib` with specs;
+  API test for `client_id` idempotency.
+
+### 28. Accessibility pass
+
+The app has some ARIA labels (about thirty across `web/src`), but no one has
+used it with a screen reader or keyboard only. Likely gaps from reading the
+code:
+
+- The set rows (`SetRow.tsx`) need labels per field that include the
+  exercise and set number.
+- The rest timer and the finish summary should be announced in a live region.
+- The SVG charts (`components/charts`) need a text alternative, such as a
+  table of the points.
+- The calendar heat map relies on colour alone.
+- Touch targets on the set row are small for sweaty hands, which is not
+  strictly accessibility but goes with it.
+- Tests: Testing Library specs for labels and live regions.
+
+### 29. Browser end-to-end tests
+
+Go tests call handlers and the web tests mock `fetch`. Nothing checks the
+built app served by the Go binary with `WEB_DIR`: the SPA fallback, the
+session cookie, the CSV download.
+
+- Playwright in `web/e2e` against the Docker image with `SEED_DEMO=true`: log
+  in, start the next program workout, log sets, finish and see the
+  progression summary, open records, export CSV.
+- A CI job after `docker`, reusing the built image.
+- Tricky: the demo history is relative to today. Assert on structure.
+
+### 30. Metrics and a readiness check
+
+`/api/health` checks the database and reports the schema version; logs are
+JSON lines. For someone hosting this for a few friends, request rates, errors
+and latency would help.
+
+- `/api/metrics` in Prometheus text format, off unless `METRICS=true`, with
+  route patterns from chi as labels (not raw paths, which contain ids).
+- The stale-workout closer and the session cleanup in `main.go` report how
+  many rows they touched.
+- Tests: disabled by default, counters move after a request.
