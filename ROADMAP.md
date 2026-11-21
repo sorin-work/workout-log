@@ -641,3 +641,86 @@ and latency would help.
 - The stale-workout closer and the session cleanup in `main.go` report how
   many rows they touched.
 - Tests: disabled by default, counters move after a request.
+
+## Maybe
+
+### 31. Faster records with years of sets
+
+`docs/architecture.md` says it plainly: records, progress series and new-PR
+detection read all of a user's completed working sets (`store.LoggedSets`)
+and compute in Go, which is fine for one person's log. Finishing a workout
+calls `RecordsSetIn`, which runs `ComputeRecords` twice over every set.
+
+- At four sessions a week with 25 sets each, that is about 5,000 sets a year;
+  ten years is 50,000 rows read on every finish and every records page view.
+  Probably still fast, but it grows without bound.
+- If it matters: keep a `personal_records` table updated on finish and on set
+  edits, and fall back to the full computation to rebuild it (after a formula
+  change, or item 3's recalculation).
+- Tricky: a second source of truth for records. A test should compare the
+  stored records with a full `ComputeRecords` after a random series of
+  inserts, edits and deletes.
+- Why Maybe: I have no evidence it is slow. Measure with a seeded fixture of
+  50,000 sets first, and assert on rows read, not timing.
+
+### 32. A read-only link for a coach
+
+Lifters often send their log to a coach or a training partner. Today that is
+"copy as text" (`shareText.ts`) per workout.
+
+- A revocable share link (`shares`: random token stored hashed, `scope` of
+  all workouts or one program, `expires_at`) that opens a read-only view of
+  history, records and charts without signing in.
+- The read-only view reuses the pages with editing hidden, served from
+  `/api/shared/<token>/...` routes that never touch the session.
+- Why Maybe: an unauthenticated window into personal data, for a feature
+  "copy as text" mostly covers.
+- Tests: the token gives exactly its scope, expires, and is refused after
+  revocation.
+
+### 33. Coach accounts
+
+A step further than item 32: a coach account that writes templates and
+programs for several lifters and sees their logs.
+
+- Links between users with consent from the lifter, templates owned by the
+  coach and assigned to lifters, and comments on workouts.
+- Why Maybe: it changes the ownership model everywhere. The store's
+  `WHERE user_id = $1` checks (which `docs/architecture.md` describes as the
+  ownership rule) would all need a second path, and getting one wrong leaks a
+  lifter's data. It is a different product.
+
+### 34. Bands and chains
+
+Accommodating resistance (a band on the bar, chains) is common in
+powerlifting. The weight on the bar is not the whole story, and today it can
+only go in a note.
+
+- An optional `extra` field on a set (band colour, chain weight), shown in
+  history and kept out of records unless the user chooses otherwise.
+- Why Maybe: a small group of lifters use it, and item 19's set notes and
+  flags may be enough.
+
+### 35. Languages and number formats
+
+Everything is in English. Weights are entered with a dot or a comma (the
+template editor replaces `,` with `.`), and numbers are shown with the
+browser's default formatting in some places and fixed ones in others
+(`web/src/lib/format.ts`).
+
+- A `locale` setting for numbers and dates, applied through `Intl`
+  consistently.
+- Translations: a message catalogue per language.
+- Why Maybe: the locale part is small and could be split out as an S; full
+  translations need someone to keep them up to date.
+
+### 36. Two-factor sign-in
+
+Passwords are bcrypt hashed and sessions are hashed tokens with
+"log out other devices". A training log is lower stakes than most accounts,
+but a self-hosted server on the internet may still want a second factor.
+
+- TOTP with recovery codes, as an option per user, with the QR code drawn in
+  the browser; login becomes two steps when enabled, both rate limited.
+- Why Maybe: little value for the data involved, and item 1's limits plus a
+  good password cover most of the risk.
